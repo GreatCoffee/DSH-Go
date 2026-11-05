@@ -2,6 +2,16 @@
 
 English | [中文](README.zh.md)
 
+> **DSH-Go**: this repository is a personal portable-build fork of DeepSeek Harness. It keeps the upstream source and history, adds a portable runtime that stores every mutable file under `<executable directory>\portable`, and documents its own build. It is not an official DeepSeek release and is not endorsed by DeepSeek.
+>
+> 本仓库是 DeepSeek Harness 的 Windows 便携构建分支：保留官方全部源码与历史，新增"所有运行期文件都落在可执行程序旁边的 `portable\`"的便携运行时。不是官方发行版。
+>
+> - 便携版说明：[docs/portable/README.zh.md](docs/portable/README.zh.md)
+> - 自行构建：[docs/portable/BUILD.zh.md](docs/portable/BUILD.zh.md)
+> - 跟进官方更新：[docs/portable/SYNC.zh.md](docs/portable/SYNC.zh.md)
+>
+> Build the portable Windows distribution with `pwsh scripts/build-portable.ps1`; follow upstream with `pwsh scripts/sync-upstream.ps1`.
+
 DeepSeek Harness (`dsh`) is an open-source agent harness developed by [DeepSeek AI](https://deepseek.com).
 
 It is built on an **everything-is-a-plugin** architecture and powered by [Cordis](https://github.com/cordiverse/cordis), whose design is described in [_A Programming Paradigm for Spatiotemporal Composability_](https://arxiv.org/abs/2608.25512).

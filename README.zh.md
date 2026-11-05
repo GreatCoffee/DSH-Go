@@ -2,6 +2,12 @@
 
 [English](README.md) | 中文
 
+> **DSH-Go**：本仓库是 DeepSeek Harness 的 Windows 便携构建分支，保留官方全部源码与历史，新增"所有运行期文件都落在可执行程序旁 `portable\` 目录"的便携运行时。不是官方发行版，也未获官方背书。
+>
+> - 便携版说明：[docs/portable/README.zh.md](docs/portable/README.zh.md)
+> - 自行构建：[docs/portable/BUILD.zh.md](docs/portable/BUILD.zh.md)
+> - 跟进官方更新：[docs/portable/SYNC.zh.md](docs/portable/SYNC.zh.md)
+
 DeepSeek Harness（`dsh`）是由 [DeepSeek AI](https://deepseek.com) 开发的开源 agent harness（智能体框架）。
 
 它构建于**一切皆插件**的架构之上，由 [Cordis](https://github.com/cordiverse/cordis) 驱动，其设计参见论文 [_A Programming Paradigm for Spatiotemporal Composability_](https://arxiv.org/abs/2608.25512)。

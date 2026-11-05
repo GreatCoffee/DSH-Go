@@ -71,6 +71,11 @@ import { DesktopUpdateOverlays } from './update-overlay.ts'
 import { DesktopQuitConfirmation } from './quit-confirmation.ts'
 import { DesktopTray } from './tray.ts'
 import { DesktopBackgroundNotice } from './background-notice.ts'
+import {
+  applyPortableEnvironment, ensurePortableLayout, readPortableState, resolvePortableLayout, writePortableState,
+  type PortableLayout,
+} from './portable.ts'
+import { rebasePortableData, type PortableRebaseSummary } from './portable-rebase.ts'
 
 let focusPrimaryWindow = (): void => {}
 let stopForRecovery = async (): Promise<void> => { await stopOperationReports() }
@@ -80,6 +85,17 @@ let shuttingDown = false
  * development restart command. The installer handoff has its own before-quit branch.
  */
 let skipQuitConfirmation = false
+/**
+ * Set for a packaged portable build: every mutable file then lives under
+ * `<executable directory>\portable`, so the whole directory can be moved.
+ */
+const portableLayout: PortableLayout | undefined = app.isPackaged
+  ? resolvePortableLayout(app.getPath('exe'))
+  : undefined
+if (portableLayout !== undefined) {
+  ensurePortableLayout(portableLayout)
+  applyPortableEnvironment(portableLayout)
+}
 let windowsLanguage: string | undefined = readDesktopLocaleCache(app.getPath('userData'))
 /**
  * Whether the backend has reached ready: false until the first ready, back to
@@ -369,7 +385,28 @@ function createWindow(preload: string, show = false, primary = false): BrowserWi
   return window
 }
 
+/**
+ * Rewrite stored absolute paths when the portable directory moved, then record
+ * this launch so the next move is measured against the current root.
+ * @param layout - the resolved portable layout.
+ */
+async function preparePortableRuntime(layout: PortableLayout): Promise<void> {
+  const previous = readPortableState(layout)
+  if (previous !== undefined && previous.lastRoot.toLowerCase() !== layout.root.toLowerCase()) {
+    const summary: PortableRebaseSummary = await rebasePortableData({
+      previousRoot: previous.lastRoot,
+      currentRoot: layout.root,
+      dshHome: layout.dshHome,
+      userData: layout.userData,
+      workspaceDirectory: layout.workspaceDirectory,
+    })
+    console.info('portable: rebased stored paths', summary)
+  }
+  await writePortableState(layout)
+}
+
 async function main(): Promise<void> {
+  if (portableLayout !== undefined) await preparePortableRuntime(portableLayout)
   const desktopSettings = await readDesktopSettings(app.getPath('userData'))
   void pruneCrashReports(app.getPath('logs'))
   const journalDirectory = process.env.DSH_DESKTOP_UPDATE_JOURNAL_DIR
@@ -1522,7 +1559,11 @@ async function main(): Promise<void> {
   const policyInput: unknown = app.isPackaged
     ? ('dshMandatoryUpdatePolicy' in manifest ? manifest.dshMandatoryUpdatePolicy : undefined)
     : developmentPolicy === undefined ? undefined : JSON.parse(developmentPolicy) as unknown
-  const policyConfig = resolveDesktopPolicyConfig(policyInput, !app.isPackaged)
+  // A portable build cannot honor the vendor's mandatory-update service: replacing
+  // the directory would destroy the layout the user carries between machines.
+  const policyConfig = portableLayout === undefined
+    ? resolveDesktopPolicyConfig(policyInput, !app.isPackaged)
+    : undefined
   if (policyConfig !== undefined) {
     if (policyConfig.authentication === 'feishu-test') {
       policyAuth = new DesktopPolicyTestAuth(policyConfig.origin, policyConfig.allowedAuthOrigins, locale,

@@ -1,6 +1,8 @@
 import { describe, expect, it, vi } from 'vitest'
 import type { NativeCommandRunner } from '@deepseek-ai/dsh-native-command'
-import { defaultWorkspaceDirectory, validateDocumentsDirectory } from '../src/default-directory.ts'
+import {
+  DOCUMENTS_DIRECTORY_ENV, defaultWorkspaceDirectory, validateDocumentsDirectory,
+} from '../src/default-directory.ts'
 
 describe('system Documents directory', () => {
   it.each([
@@ -19,6 +21,28 @@ describe('system Documents directory', () => {
     await expect(defaultWorkspaceDirectory('/documents', new AbortController().signal, { platform: 'linux', run }))
       .resolves.toBe('/documents/deepseek-harness/default-workspace')
     expect(run).not.toHaveBeenCalled()
+  })
+
+  it('honors the deployment environment override without a system lookup', async () => {
+    const run = vi.fn<NativeCommandRunner>()
+    const env = { [DOCUMENTS_DIRECTORY_ENV]: ' /portable/workspace ' }
+    await expect(defaultWorkspaceDirectory(undefined, new AbortController().signal, { platform: 'linux', run, env }))
+      .resolves.toBe('/portable/workspace/deepseek-harness/default-workspace')
+    expect(run).not.toHaveBeenCalled()
+  })
+
+  it('prefers an explicit directory over the environment override', async () => {
+    const env = { [DOCUMENTS_DIRECTORY_ENV]: '/from-env' }
+    await expect(defaultWorkspaceDirectory('/explicit', new AbortController().signal, { platform: 'linux', env }))
+      .resolves.toBe('/explicit/deepseek-harness/default-workspace')
+  })
+
+  it('ignores a blank environment override', async () => {
+    const run = vi.fn<NativeCommandRunner>(async () => ({ stdout: '/documents\n', stderr: '' }))
+    const env = { [DOCUMENTS_DIRECTORY_ENV]: '   ' }
+    await expect(defaultWorkspaceDirectory(undefined, new AbortController().signal, { platform: 'linux', run, env }))
+      .resolves.toBe('/documents/deepseek-harness/default-workspace')
+    expect(run).toHaveBeenCalled()
   })
 
   it.each(['', '\r\n', '/home/a\n'])('rejects an unavailable XDG directory %j', async (stdout) => {

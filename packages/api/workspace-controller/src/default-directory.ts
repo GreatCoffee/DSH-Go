@@ -5,11 +5,16 @@ import { posix, win32 } from 'node:path'
 import { runNativeCommand, type NativeCommandRunner } from '@deepseek-ai/dsh-native-command'
 import { DEFAULT_WORKSPACE_DIRECTORY } from './default-workspace.ts'
 
+/** Environment override a portable deployment uses to relocate first-use Workspaces. */
+export const DOCUMENTS_DIRECTORY_ENV = 'DSH_DOCUMENTS_DIRECTORY'
+
 /** Platform observations replaceable in directory-resolution tests. */
 interface DocumentsDirectoryInternals {
   readonly platform?: NodeJS.Platform
   readonly home?: string
   readonly run?: NativeCommandRunner
+  /** Environment consulted for the deployment override; defaults to the process environment. */
+  readonly env?: NodeJS.ProcessEnv
 }
 
 /**
@@ -42,7 +47,8 @@ export async function defaultWorkspaceDirectory(
   const platform = internals.platform ?? process.platform
   const paths = platform === 'win32' ? win32 : posix
   signal.throwIfAborted()
-  let directory = documentsDirectory
+  const fromEnvironment = (internals.env ?? process.env)[DOCUMENTS_DIRECTORY_ENV]?.trim()
+  let directory = documentsDirectory ?? (fromEnvironment === undefined || fromEnvironment === '' ? undefined : fromEnvironment)
   if (directory === undefined) {
     const run = internals.run ?? runNativeCommand
     let stdout: string

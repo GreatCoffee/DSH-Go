@@ -48,6 +48,6 @@
     "@deepseek-ai/dsh-timeout": "workspace:^",
     "cordis": "^4.0.0-rc.7",
     "typescript": "^6.0.3",
-    "typescript-language-server": "^5.0.0"
+    "typescript-language-server": "^6.0.1"
   }
 }

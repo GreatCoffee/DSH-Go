@@ -1,4 +1,6 @@
-# DeepSeek Harness
+# DSH-Go
+
+基于 [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness) 的 Windows 便携构建。非官方。
 
 [English](README.md) | 中文
 

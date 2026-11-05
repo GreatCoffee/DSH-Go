@@ -1,4 +1,6 @@
-# DeepSeek Harness
+# DSH-Go
+
+A portable Windows build of [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness). Unofficial.
 
 English | [中文](README.zh.md)
 

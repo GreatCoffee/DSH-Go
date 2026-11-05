@@ -33,19 +33,25 @@ if (Test-Path $a) {
 }
 Write-Host "installed commit: $localCommit"
 
-$headers = @{ 'User-Agent' = 'DSH-Go-Updater'; 'Accept' = 'application/vnd.github+json' }
+# Resolve the newest tag from the `releases/latest` redirect instead of the REST
+# API: anonymous API calls are rate limited per IP, the redirect is not.
+$tag = $null
 try {
-  $release = Invoke-RestMethod -Uri "https://api.github.com/repos/$repository/releases/latest" -Headers $headers
+  $probe = Invoke-WebRequest -Uri "https://github.com/$repository/releases/latest" -MaximumRedirection 0 -UseBasicParsing -ErrorAction Stop
+  Write-Host 'No release has been published for this repository yet.' -ForegroundColor Yellow
+  return
 } catch {
-  $status = $null
-  if ($_.Exception.Response) { $status = [int]$_.Exception.Response.StatusCode }
-  if ($status -eq 404) {
-    Write-Host 'No release has been published for this repository yet.' -ForegroundColor Yellow
-    return
+  $response = $_.Exception.Response
+  if (-not $response) { throw }
+  $location = $response.Headers['Location']
+  if ($location) {
+    $tag = @($location)[0].TrimEnd('/').Split('/')[-1]
   }
-  throw
 }
-$tag = [string]$release.tag_name
+if (-not $tag) {
+  Write-Host 'No release has been published for this repository yet.' -ForegroundColor Yellow
+  return
+}
 Write-Host "latest release: $tag"
 
 if ($tag -eq "go-$localCommit") {
@@ -57,10 +63,10 @@ if ($Check) {
   return
 }
 
-$archiveAsset = $release.assets | Where-Object { $_.name -like '*.zip' } | Select-Object -First 1
-$checksumAsset = $release.assets | Where-Object { $_.name -like '*.sha256' } | Select-Object -First 1
-if (-not $archiveAsset) { throw "release $tag has no zip asset" }
-if (-not $checksumAsset) { throw "release $tag has no checksum asset; refusing an unverified update" }
+$releaseCommit = $tag -replace '^go-', ''
+$archiveName = "DSH-Go-$releaseCommit-win-x64-portable.zip"
+$archiveUrl = "https://github.com/$repository/releases/download/$tag/$archiveName"
+$checksumUrl = "$archiveUrl.sha256"
 
 $running = @(Get-Process -Name 'DeepSeek Harness' -ErrorAction SilentlyContinue |
   Where-Object { $_.Path -and $_.Path.StartsWith($install, [System.StringComparison]::OrdinalIgnoreCase) })
@@ -75,13 +81,13 @@ if ($running.Count -gt 0) {
 
 $temporary = Join-Path $env:TEMP ("dsh-go-update-" + [System.Guid]::NewGuid().ToString('N'))
 New-Item -ItemType Directory -Force -Path $temporary | Out-Null
-$zip = Join-Path $temporary $archiveAsset.name
-$sum = Join-Path $temporary $checksumAsset.name
+$zip = Join-Path $temporary $archiveName
+$sum = "$zip.sha256"
 
 try {
-  Write-Host "downloading $($archiveAsset.name) ($([math]::Round($archiveAsset.size / 1MB)) MB)" -ForegroundColor Cyan
-  Invoke-WebRequest -Uri $archiveAsset.browser_download_url -OutFile $zip -UseBasicParsing
-  Invoke-WebRequest -Uri $checksumAsset.browser_download_url -OutFile $sum -UseBasicParsing
+  Write-Host "downloading $archiveName" -ForegroundColor Cyan
+  Invoke-WebRequest -Uri $archiveUrl -OutFile $zip -UseBasicParsing
+  Invoke-WebRequest -Uri $checksumUrl -OutFile $sum -UseBasicParsing
 
   $expected = ((Get-Content $sum -Raw) -split '\s+')[0].ToLowerInvariant()
   $actual = (Get-FileHash $zip -Algorithm SHA256).Hash.ToLowerInvariant()

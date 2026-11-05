@@ -34,7 +34,17 @@ if (Test-Path $a) {
 Write-Host "installed commit: $localCommit"
 
 $headers = @{ 'User-Agent' = 'DSH-Go-Updater'; 'Accept' = 'application/vnd.github+json' }
-$release = Invoke-RestMethod -Uri "https://api.github.com/repos/$repository/releases/latest" -Headers $headers
+try {
+  $release = Invoke-RestMethod -Uri "https://api.github.com/repos/$repository/releases/latest" -Headers $headers
+} catch {
+  $status = $null
+  if ($_.Exception.Response) { $status = [int]$_.Exception.Response.StatusCode }
+  if ($status -eq 404) {
+    Write-Host 'No release has been published for this repository yet.' -ForegroundColor Yellow
+    return
+  }
+  throw
+}
 $tag = [string]$release.tag_name
 Write-Host "latest release: $tag"
 

@@ -2,7 +2,7 @@
 
 DSH-Go 是 [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness)（MIT）的 Windows 便携构建：所有运行期文件都保存在可执行程序旁边的 `portable\` 目录里，整个目录可以搬到任意路径（包括网络驱动器），双击可执行程序即可恢复上次关闭时的状态。
 
-本项目不是 DeepSeek 官方发行版，也未获得官方背书。
+本项目不是 DeepSeek 官方发行版，也未获得官方背书。维护者不具备代码能力，除上游原项目之外的全部改动由 AI 模型 DeepSeek V4.1 Flash 生成、未经任何有资质的工程师审核；请先看 diff、备份 `portable\`，风险自担。
 
 ## 目录结构
 

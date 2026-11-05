@@ -2,11 +2,18 @@
 
 [English](README.md) | 中文
 
-> **DSH-Go**：本仓库是 DeepSeek Harness 的 Windows 便携构建分支，保留官方全部源码与历史，新增"所有运行期文件都落在可执行程序旁 `portable\` 目录"的便携运行时。不是官方发行版，也未获官方背书。
+> ### 这不是官方项目
 >
-> - 便携版说明：[docs/portable/README.zh.md](docs/portable/README.zh.md)
-> - 自行构建：[docs/portable/BUILD.zh.md](docs/portable/BUILD.zh.md)
-> - 跟进官方更新：[docs/portable/SYNC.zh.md](docs/portable/SYNC.zh.md)
+> DSH-Go 是 DeepSeek Harness 的非官方、个人用便携构建，与 DeepSeek 没有任何隶属、赞助或背书关系。"DeepSeek Harness"与"DeepSeek"是 DeepSeek 的商标，本项目仅在描述"基于什么构建"时使用该名称。除上游原项目之外的每一个文件，都是本分支的额外添加。
+>
+> ### 没有人工审核，不提供任何保证
+>
+> 本分支的维护者**不具备代码能力，无法编写或审阅代码**。除上游原项目之外的全部改动——便携运行时、路径重写层、构建与更新脚本、以及这些文档——**均由 AI 模型 DeepSeek V4.1 Flash 生成**，**未经任何有资质的工程师审核**。它们可能是错误的、不安全的，甚至是破坏性的。
+>
+> 请把它当作未经审核的第三方软件：运行前先看 diff，备份 `portable\`，不要指向你输不起的数据，风险完全自担。MIT 许可证不提供任何形式的担保。
+>
+> - 便携版说明：[docs/portable/README.zh.md](docs/portable/README.zh.md) · 自行构建：[docs/portable/BUILD.zh.md](docs/portable/BUILD.zh.md) · 跟进上游：[docs/portable/SYNC.zh.md](docs/portable/SYNC.zh.md)
+> - 构建：`pwsh scripts/build-portable.ps1`；同步上游：`pwsh scripts/sync-upstream.ps1`；更新已安装的便携版：`pwsh scripts/update-portable.ps1`
 
 DeepSeek Harness（`dsh`）是由 [DeepSeek AI](https://deepseek.com) 开发的开源 agent harness（智能体框架）。
 

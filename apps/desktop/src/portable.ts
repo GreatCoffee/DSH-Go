@@ -67,12 +67,16 @@ export function resolvePortableLayout(exePath: string, networkLocation?: boolean
 /**
  * Create the portable directory skeleton. Existing content is preserved.
  * @param layout - the resolved portable layout.
+ * @returns whether the portable directory itself was absent, which means the
+ * shipped data directory was removed or moved away rather than merely initialized.
  */
-export function ensurePortableLayout(layout: PortableLayout): void {
+export function ensurePortableLayout(layout: PortableLayout): boolean {
+  const wasAbsent = !existsSync(layout.portableDirectory)
   for (const directory of [
     layout.portableDirectory, layout.dshHome, layout.userData, layout.workspaceDirectory,
     layout.cacheDirectory, layout.scratchDirectory,
   ]) mkdirSync(directory, { recursive: true })
+  return wasAbsent
 }
 
 /**

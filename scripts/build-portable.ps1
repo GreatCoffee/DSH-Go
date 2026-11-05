@@ -76,6 +76,8 @@ $buildInfo = @(
 )
 Set-Content -Path (Join-Path $output 'BUILD-INFO.txt') -Value $buildInfo -Encoding utf8
 
+Copy-Item (Join-Path $repoRoot 'scripts/update-portable.ps1') (Join-Path $output 'Update-DSH-Go.ps1') -Force
+
 if ($Zip) {
   $archive = Join-Path $repoRoot "dist/DSH-Go-$version-win-x64-portable.zip"
   Write-Step "compressing $archive"

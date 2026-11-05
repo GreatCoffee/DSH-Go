@@ -92,8 +92,10 @@ let skipQuitConfirmation = false
 const portableLayout: PortableLayout | undefined = app.isPackaged
   ? resolvePortableLayout(app.getPath('exe'))
   : undefined
+/** Whether the shipped `portable` directory was absent, which is not a first launch. */
+let portableDataWasMissing = false
 if (portableLayout !== undefined) {
-  ensurePortableLayout(portableLayout)
+  portableDataWasMissing = ensurePortableLayout(portableLayout)
   applyPortableEnvironment(portableLayout)
 }
 let windowsLanguage: string | undefined = readDesktopLocaleCache(app.getPath('userData'))
@@ -405,8 +407,31 @@ async function preparePortableRuntime(layout: PortableLayout): Promise<void> {
   await writePortableState(layout)
 }
 
+/**
+ * Report that the shipped `portable` directory was missing. A moved-away data
+ * directory would otherwise look like an ordinary first launch, which hides the
+ * one case where a user's sessions are still sitting somewhere else.
+ * @param layout - the resolved portable layout.
+ */
+async function notifyMissingPortableData(layout: PortableLayout): Promise<void> {
+  const chinese = app.getLocale().toLowerCase().startsWith('zh')
+  await dialog.showMessageBox({
+    type: 'info',
+    title: 'DSH-Go',
+    message: chinese ? '没有找到便携数据目录，已按全新安装启动' : 'The portable data directory was missing, so this is a fresh start',
+    detail: chinese
+      ? `程序目录下的 portable\\ 文件夹不存在，已重新创建：\n${layout.portableDirectory}\n\n如果数据还在别处，请先退出，把整个 portable 文件夹放回程序目录后重新启动。`
+      : `The portable\\ folder beside the executable was missing and has been recreated at:\n${layout.portableDirectory}\n\nIf your data still exists elsewhere, quit, put the whole portable folder back beside the executable, and start again.`,
+    buttons: ['OK'],
+    noLink: true,
+  })
+}
+
 async function main(): Promise<void> {
-  if (portableLayout !== undefined) await preparePortableRuntime(portableLayout)
+  if (portableLayout !== undefined) {
+    await preparePortableRuntime(portableLayout)
+    if (portableDataWasMissing) await notifyMissingPortableData(portableLayout)
+  }
   const desktopSettings = await readDesktopSettings(app.getPath('userData'))
   void pruneCrashReports(app.getPath('logs'))
   const journalDirectory = process.env.DSH_DESKTOP_UPDATE_JOURNAL_DIR

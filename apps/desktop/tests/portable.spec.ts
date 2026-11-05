@@ -38,8 +38,8 @@ it('derives every portable path from the executable directory', async () => {
 it('creates the directory skeleton idempotently', async () => {
   const root = await directory()
   const layout = resolvePortableLayout(join(root, 'DSH-Go.exe'), false)
-  ensurePortableLayout(layout)
-  ensurePortableLayout(layout)
+  expect(ensurePortableLayout(layout)).toBe(true)
+  expect(ensurePortableLayout(layout)).toBe(false)
   expect(readPortableState(layout)).toBeUndefined()
 })
 

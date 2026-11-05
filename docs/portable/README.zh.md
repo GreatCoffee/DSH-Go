@@ -52,3 +52,17 @@ DSH-Go\
 便携版无法被安装器覆盖（那会把目录搬进 Program Files），因此禁用了官方的强制更新检查；拆包后的自动更新配置本来也不包含在无签名目录构建里。
 
 升级方式是替换程序文件、保留 `portable\`。源码级的更新（跟进官方仓库）见 [SYNC.zh.md](SYNC.zh.md)，构建方法见 [BUILD.zh.md](BUILD.zh.md)。
+
+## 更新自己
+
+程序目录里有 `Update-DSH-Go.ps1`，双击或用 PowerShell 运行即可：
+
+```powershell
+pwsh .\Update-DSH-Go.ps1          # 下载最新发布版并替换程序文件
+pwsh .\Update-DSH-Go.ps1 -Check   # 只检查有没有新版本
+pwsh .\Update-DSH-Go.ps1 -Force   # 关闭正在运行的实例后更新
+```
+
+它从 GitHub Releases 读取最新版本（按 `BUILD-INFO.txt` 里的提交号比对），下载 zip 并**校验 SHA-256**，然后覆盖程序文件；`portable\` 不会被触碰。更新需要联网，仓库公开后无需任何令牌。
+
+若新版本启动异常，把旧版本目录整体替换回来即可，数据始终在 `portable\` 里不受影响。

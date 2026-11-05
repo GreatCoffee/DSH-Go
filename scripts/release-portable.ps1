@@ -57,13 +57,18 @@ $notes = @(
   '  pwsh scripts/update-portable.ps1'
 ) -join "`n"
 
-$existing = gh release view $tag --repo (gh repo view --json nameWithOwner --jq .nameWithOwner) 2>$null
+$existing = gh release view $tag 2>$null
 if ($LASTEXITCODE -eq 0) {
   Write-Host "release $tag already exists; uploading assets to it" -ForegroundColor Yellow
   & gh release upload $tag $archive $checksumFile --clobber
 } else {
-  $draftFlag = if ($Draft) { '--draft' } else { '' }
-  & gh release create $tag $archive $checksumFile --title "DSH-Go $version ($commit)" --notes $notes $draftFlag
+  $arguments = @(
+    $tag, $archive, $checksumFile,
+    '--title', "DSH-Go $version ($commit)",
+    '--notes', $notes
+  )
+  if ($Draft) { $arguments += '--draft' }
+  & gh release create @arguments
 }
 if ($LASTEXITCODE -ne 0) { throw "gh release failed with exit code $LASTEXITCODE" }
 

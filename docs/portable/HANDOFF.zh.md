@@ -30,7 +30,9 @@ D:\Documents\Softwares\DSH-Go\
    ├─ dsh-home\        会话、storages、profiles（含插件）、.credentials.yaml
    ├─ user-data\       Electron profile
    ├─ workspace\DSH-Portable\   活动工作区（git 仓库 + node_modules）
-   ├─ cache\           pnpm store（插件与依赖包体都在这）
+   ├─ cache\           pnpm store（插件与依赖包体都在这），兼作 XDG_CACHE_HOME
+   ├─ config\          XDG_CONFIG_HOME（按 XDG 定位的插件配置）
+   ├─ state\           XDG_STATE_HOME（同上，日志与运行状态）
    └─ temp\
 ```
 

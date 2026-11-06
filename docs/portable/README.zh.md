@@ -14,12 +14,16 @@ DSH-Go\
    ├─ dsh-home\             $DSH_HOME：sessions\ storages\ profiles\ attachments\ .credentials.yaml
    ├─ user-data\            Electron profile：Local Storage、desktop\settings.json、logs\
    ├─ workspace\            默认工作区父目录（实际工作区为 workspace\deepseek-harness\default-workspace）
-   ├─ cache\                npm / pnpm 缓存与 Chromium 缓存
+   ├─ cache\                npm / pnpm 缓存、Chromium 缓存，兼作 XDG_CACHE_HOME
+   ├─ config\               XDG_CONFIG_HOME：遵守 XDG 规范的工具与插件的配置
+   ├─ state\                XDG_STATE_HOME：同上，日志与运行状态
    ├─ temp\                 Electron 临时目录
    └─ state.json            上次启动所在的目录，用于识别"搬家"
 ```
 
 程序文件与数据完全分离：升级时只替换程序文件，`portable\` 原样保留。
+
+插件不必为便携版改写：启动时把 `XDG_CONFIG_HOME`、`XDG_CACHE_HOME`、`XDG_STATE_HOME` 指向 `config\`、`cache\`、`state\`，按 XDG 规范定位文件的插件与工具（billion-context 即是一例）会把配置、缓存和日志留在 `portable\` 内，搬走后一起跟着走。
 
 ## 搬家时发生什么
 

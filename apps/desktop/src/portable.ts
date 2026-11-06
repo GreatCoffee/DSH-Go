@@ -25,6 +25,10 @@ export interface PortableLayout {
   readonly workspaceDirectory: string
   /** Package-manager and shell caches that must not escape the portable directory. */
   readonly cacheDirectory: string
+  /** `XDG_CONFIG_HOME`, so XDG-aware tools keep their configuration beside the executable. */
+  readonly configDirectory: string
+  /** `XDG_STATE_HOME`, so XDG-aware tools keep their state and logs beside the executable. */
+  readonly stateDirectory: string
   /** Scratch directory handed to Electron as `temp`. */
   readonly scratchDirectory: string
   /** `portable/state.json`, recording the last launch root. */
@@ -58,6 +62,8 @@ export function resolvePortableLayout(exePath: string, networkLocation?: boolean
     userData: join(portableDirectory, 'user-data'),
     workspaceDirectory: join(portableDirectory, 'workspace'),
     cacheDirectory: join(portableDirectory, 'cache'),
+    configDirectory: join(portableDirectory, 'config'),
+    stateDirectory: join(portableDirectory, 'state'),
     scratchDirectory: join(portableDirectory, 'temp'),
     stateFile: join(portableDirectory, 'state.json'),
     networkLocation: networkLocation ?? isNetworkLocation(root),
@@ -74,7 +80,7 @@ export function ensurePortableLayout(layout: PortableLayout): boolean {
   const wasAbsent = !existsSync(layout.portableDirectory)
   for (const directory of [
     layout.portableDirectory, layout.dshHome, layout.userData, layout.workspaceDirectory,
-    layout.cacheDirectory, layout.scratchDirectory,
+    layout.cacheDirectory, layout.configDirectory, layout.stateDirectory, layout.scratchDirectory,
   ]) mkdirSync(directory, { recursive: true })
   return wasAbsent
 }
@@ -121,6 +127,11 @@ export function applyPortableEnvironment(layout: PortableLayout): void {
   environment['DSH_DESKTOP_PORTABLE'] = '1'
   environment['npm_config_cache'] = join(layout.cacheDirectory, 'npm')
   environment['pnpm_config_store_dir'] = join(layout.cacheDirectory, 'pnpm-store')
+  // XDG-aware tools, plugins among them, default to the user profile on Windows and
+  // would leave configuration, cache, and state behind when the directory moves.
+  environment['XDG_CONFIG_HOME'] = layout.configDirectory
+  environment['XDG_CACHE_HOME'] = layout.cacheDirectory
+  environment['XDG_STATE_HOME'] = layout.stateDirectory
   // The Windows write-restriction sandbox cannot own an ACL on a share; the
   // deployment default keeps confined commands working by running unconfined.
   if (layout.networkLocation) environment['DSH_PERMISSION_MODE'] = 'danger-full-access'

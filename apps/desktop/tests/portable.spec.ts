@@ -15,6 +15,9 @@ afterEach(async () => {
   setPath.mockClear()
   delete process.env['DSH_HOME']
   delete process.env['DSH_PERMISSION_MODE']
+  delete process.env['XDG_CONFIG_HOME']
+  delete process.env['XDG_CACHE_HOME']
+  delete process.env['XDG_STATE_HOME']
   await Promise.all(roots.splice(0).map(root => rm(root, { recursive: true, force: true })))
 })
 
@@ -33,6 +36,8 @@ it('derives every portable path from the executable directory', async () => {
   expect(layout.userData).toBe(join(root, 'portable', 'user-data'))
   expect(layout.workspaceDirectory).toBe(join(root, 'portable', 'workspace'))
   expect(layout.stateFile).toBe(join(root, 'portable', 'state.json'))
+  expect(layout.configDirectory).toBe(join(root, 'portable', 'config'))
+  expect(layout.stateDirectory).toBe(join(root, 'portable', 'state'))
 })
 
 it('creates the directory skeleton idempotently', async () => {
@@ -61,6 +66,9 @@ it('points Electron and the Host at the portable layout', async () => {
   expect(setPath).toHaveBeenCalledWith('logs', join(layout.userData, 'logs'))
   expect(process.env['DSH_HOME']).toBe(layout.dshHome)
   expect(process.env['DSH_DOCUMENTS_DIRECTORY']).toBe(layout.workspaceDirectory)
+  expect(process.env['XDG_CONFIG_HOME']).toBe(layout.configDirectory)
+  expect(process.env['XDG_CACHE_HOME']).toBe(layout.cacheDirectory)
+  expect(process.env['XDG_STATE_HOME']).toBe(layout.stateDirectory)
   expect(process.env['DSH_PERMISSION_MODE']).toBeUndefined()
 })
 

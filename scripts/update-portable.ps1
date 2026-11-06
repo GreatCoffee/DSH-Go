@@ -1,4 +1,4 @@
-#Requires -Version 5.1
+﻿#Requires -Version 5.1
 <#
 .SYNOPSIS
   Update this DSH-Go installation from its GitHub releases.
@@ -29,6 +29,10 @@ param(
 $ErrorActionPreference = 'Stop'
 $install = $PSScriptRoot
 $repository = 'GreatCoffee/DSH-Go'
+$logPath = Join-Path $install 'update-last.log'
+
+# Keep a transcript so a launcher that closes early still leaves evidence.
+try { Start-Transcript -Path $logPath -Force | Out-Null } catch { $logPath = $null }
 
 function Write-Line([string]$zh, [string]$en, [string]$color = 'Gray') {
   Write-Host $zh -ForegroundColor $color
@@ -36,10 +40,16 @@ function Write-Line([string]$zh, [string]$en, [string]$color = 'Gray') {
 }
 
 function Finish([int]$code = 0) {
+  if ($logPath) { Write-Host "日志 / Log: $logPath" -ForegroundColor DarkGray }
+  try { Stop-Transcript | Out-Null } catch {
+  # Transcript already stopped.
+}
   Write-Host ''
   if (-not $NoPause -and $Host.Name -eq 'ConsoleHost') {
     Write-Host '按回车键退出 / Press Enter to exit' -ForegroundColor DarkGray
-    try { [void](Read-Host) } catch { /* no console: nothing to wait for */ }
+    try { [void](Read-Host) } catch {
+    # No console to wait on.
+  }
   }
   exit $code
 }
@@ -165,3 +175,4 @@ catch {
   Write-Line "更新失败：$($_.Exception.Message)" "Update failed: $($_.Exception.Message)" 'Red'
   Finish 1
 }
+

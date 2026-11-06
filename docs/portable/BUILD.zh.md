@@ -109,7 +109,19 @@ dist\DSH-Go\
 产物是未签名的 Electron 应用，首次运行可能被 SmartScreen 提示。开发者可在本地用自签名证书签名，发布版本则建议购买代码签名证书。
 
 **路径过长**
-Node 的依赖树较深，建议把仓库放在较短的路径下（例如 `C:\src\DSH-Go`），并启用系统的长路径支持。
+仓库路径深时，打包会在"运行时自检"阶段失败，报 `ImportError: DLL load failed while importing _elementpath: 文件名或扩展名太长`。原因是内置 Python 的 `lxml` 扩展位于 `resources\runtime\...\python\Lib\site-packages\` 下，完整路径已逼近 260 字符上限；即使系统已开启长路径支持，这条加载路径仍会超限。
+实测：工作区在 `D:\Documents\Softwares\DSH-Go\portable\workspace\DSH-Portable\dsh-go` 时失败，换到 `D:\b\dsh-go` 后一次通过。
+规避办法是复制到短路径构建：
+
+```powershell
+robocopy <repo> D:\b\dsh-go /E /MT:16 /XJ /XD node_modules .desktop-build dist .pnpm-store
+cd D:\b\dsh-go
+pnpm install --frozen-lockfile
+pwsh scripts/build-portable.ps1
+# 产物在 D:\b\dsh-go\dist\DSH-Go
+```
+
+不要整目录复制 `node_modules`：仓库里是 pnpm 的符号链接布局，跟随复制会展开成几十 GB。上面用 `/XD node_modules` 排除，再在目标里重装。
 
 ## 7. 只跑测试与类型检查
 

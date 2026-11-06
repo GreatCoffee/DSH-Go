@@ -1,0 +1,31 @@
+# Bilingual-pair consistency record for BUILD.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
+#   pnpm run verify-translation-pairing --write docs/portable/BUILD.md
+/building-dsh-go-windows-x64-portable:
+  en: c27f2f4c79a8d929
+  zh: f0a5cb560fd67545
+/building-dsh-go-windows-x64-portable/0-prerequisites:
+  en: 5a778fd78f42ef16
+  zh: 275a7e3b7c5c25a3
+/building-dsh-go-windows-x64-portable/1-install-the-toolchain-administrator:
+  en: 0044b03177ae9960
+  zh: 7387f483edba36e2
+/building-dsh-go-windows-x64-portable/2-fetch-the-source-and-install-dependencies:
+  en: f33f027b2147ef73
+  zh: 6188bef73c73e11f
+/building-dsh-go-windows-x64-portable/3-configure-the-windows-packaging-parameters:
+  en: 6d901813cbe8e6f3
+  zh: fa0c0ed3d17df096
+/building-dsh-go-windows-x64-portable/4-build:
+  en: 001e6ad757548bdc
+  zh: c45e0b7d6271856b
+/building-dsh-go-windows-x64-portable/5-artifacts:
+  en: d8aff5feb59504d4
+  zh: 5a65f20f437bf12e
+/building-dsh-go-windows-x64-portable/6-faq:
+  en: 88627613b82fc970
+  zh: 1b67bdac9126f378
+/building-dsh-go-windows-x64-portable/7-running-only-tests-and-type-checks:
+  en: 82fd523682555545
+  zh: f24552c7b70fe289

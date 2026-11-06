@@ -533,13 +533,16 @@ delete(id: WorkspaceId): Promise<boolean>
  * `sessionPersistence` and every registry trace of it — workspace
  * accounting, the archive and pin sets, and the canonical-cwd header index.
  *
- * Removal is irreversible, so a Session whose work is still running is
- * refused with {@link WorkspaceActiveSessionError} — archiving stops work,
- * deleting does not, and the reader that owns the live Session would
- * otherwise keep appending to a log that no longer exists. An idle but open
- * Session is released first through `workspace/session-close`, so a
- * conversation the user left open deletes without an application restart.
- * The durable log
+ * Removal is irreversible, so the Session's running work is stopped first:
+ * when the `workspace/session-activity` waterfall reports any, its
+ * `workspace/session-stop` providers are asked to cancel it, because a
+ * reader that keeps appending to a log that no longer exists is worse than
+ * a cancelled turn on a Session the user already chose to destroy. The live
+ * in-process owner is then released through `workspace/session-close`, so a
+ * conversation the user left open deletes without an application restart
+ * and its log write handle is closed before the files disappear. Deletion
+ * therefore never refuses on activity: it stops instead, mirroring
+ * {@link archiveSession}'s `stopActivity` behaviour. The durable log
  * goes first because it is the fact the rest derives from: a failure there
  * leaves the registry intact and the Session readable. Once the log is gone,
  * the id is dropped from every workspace record and from the archive and pin
@@ -550,7 +553,6 @@ delete(id: WorkspaceId): Promise<boolean>
  * @param sessionId - the Session to remove.
  * @returns resolution after the log and every registry trace are gone.
  * @throws {WorkspaceUnknownSessionError} when neither live state nor storage knows the Session.
- * @throws {WorkspaceActiveSessionError} while the Session has running work.
  */
 deleteSession(sessionId: SessionId): Promise<void>
 

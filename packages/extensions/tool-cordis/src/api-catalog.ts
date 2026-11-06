@@ -2898,6 +2898,11 @@ export const SERVICE_API: readonly ServiceApiEntry[] = [
         parameters: [],
       },
       {
+        signature: 'declare readonly root?: string',
+        description: 'Directory this store keeps its Sessions under, when the backend owns one.\n\nMaintenance walks beside the logs — a crash or a deletion from an older build can leave a directory no header names — and cannot rebuild the layout itself without duplicating every encoding rule. Backends that keep no directory (a remote store, an in-memory fake) leave this `undefined`.',
+        parameters: [],
+      },
+      {
         signature: 'abstract create(header: SessionHeader, options?: SessionPersistenceCreateOptions): Promise<SessionHandle>',
         description: 'Create a new stored session and take its write ownership.',
         parameters: [{ name: 'header', description: 'the immutable header (id, version, cwd, lineage) to store.' }, { name: 'options', description: 'optional cancellation.' }],
@@ -2972,6 +2977,18 @@ export const SERVICE_API: readonly ServiceApiEntry[] = [
         description: 'Cold-read one session\'s projections from its complete log. Each unit is seeded from the identity-checked cached rows — the registry skips `apply` for the already-folded prefix (events at or below the row\'s `seq`) — and the refreshed checkpoint is written back (fail-soft, fire-and-forget), so the first cold read creates the cache row and later ones seed from it. The caller supplies the complete log in seq order: this service never consults the persistence layer.',
         parameters: [{ name: 'meta', description: 'the stored session header (identity witness).' }, { name: 'inheritedEventCount', description: 'exact inherited prefix length for projection initialization and identity.' }, { name: 'events', description: 'the session\'s complete log, in seq order.' }],
         returns: 'the projection cut at the log end.',
+      },
+      {
+        signature: 'async orphanIds(known: ReadonlySet<SessionId>): Promise<SessionId[]>',
+        description: 'Stored checkpoints whose Session the persistence store no longer lists.\n\nMaintenance reads this instead of opening the domain a second time: the facility allows one open per domain and this service holds it.',
+        parameters: [{ name: 'known', description: 'ids the persistence store still names.' }],
+        returns: 'the unreachable ids, in no particular order.',
+      },
+      {
+        signature: 'async pruneOrphans(known: ReadonlySet<SessionId>): Promise<number>',
+        description: 'Drop every stored checkpoint whose Session the store no longer lists.\n\nOne batch write, so a partial sweep never leaves the table half pruned.',
+        parameters: [{ name: 'known', description: 'ids the persistence store still names.' }],
+        returns: 'how many records were removed.',
       },
     ],
   },
@@ -4671,10 +4688,10 @@ export const SERVICE_API: readonly ServiceApiEntry[] = [
       },
       {
         signature: 'deleteSession(sessionId: SessionId): Promise<void>',
-        description: 'Permanently remove one Session: its durable log through `sessionPersistence` and every registry trace of it — workspace accounting, the archive and pin sets, and the canonical-cwd header index.\n\nRemoval is irreversible, so a Session whose work is still running is refused with WorkspaceActiveSessionError — archiving stops work, deleting does not, and the reader that owns the live Session would otherwise keep appending to a log that no longer exists. An idle but open Session is released first through `workspace/session-close`, so a conversation the user left open deletes without an application restart. The durable log goes first because it is the fact the rest derives from: a failure there leaves the registry intact and the Session readable. Once the log is gone, the id is dropped from every workspace record and from the archive and pin sets in the same queued operation, and its header index entries are cleared, so no grouping surface, `sessionKnown` check, or later `resolveByPath` resurrects it. Deletion never touches the workspace directory or any other Session.',
+        description: 'Permanently remove one Session: its durable log through `sessionPersistence` and every registry trace of it — workspace accounting, the archive and pin sets, and the canonical-cwd header index.\n\nRemoval is irreversible, so the Session\'s running work is stopped first: when the `workspace/session-activity` waterfall reports any, its `workspace/session-stop` providers are asked to cancel it, because a reader that keeps appending to a log that no longer exists is worse than a cancelled turn on a Session the user already chose to destroy. The live in-process owner is then released through `workspace/session-close`, so a conversation the user left open deletes without an application restart and its log write handle is closed before the files disappear. Deletion therefore never refuses on activity: it stops instead, mirroring archiveSession\'s `stopActivity` behaviour. The durable log goes first because it is the fact the rest derives from: a failure there leaves the registry intact and the Session readable. Once the log is gone, the id is dropped from every workspace record and from the archive and pin sets in the same queued operation, and its header index entries are cleared, so no grouping surface, `sessionKnown` check, or later `resolveByPath` resurrects it. Deletion never touches the workspace directory or any other Session.',
         parameters: [{ name: 'sessionId', description: 'the Session to remove.' }],
         returns: 'resolution after the log and every registry trace are gone.',
-        throws: ['{WorkspaceUnknownSessionError} when neither live state nor storage knows the Session.', '{WorkspaceActiveSessionError} while the Session has running work.'],
+        throws: ['{WorkspaceUnknownSessionError} when neither live state nor storage knows the Session.'],
       },
       {
         signature: 'insertBefore(id: WorkspaceId, beforeId?: WorkspaceId): Promise<readonly WorkspaceId[]>',

@@ -26,6 +26,7 @@ describe('Shipped profile templates', () => {
       web: {
         bundles: [
           '@deepseek-ai/dsh-base', '@deepseek-ai/dsh-web-app', '@deepseek-ai/dsh-go-session-delete',
+          '@deepseek-ai/dsh-go-maintenance',
         ],
       },
       headless: { bundles: ['@deepseek-ai/dsh-base', '@deepseek-ai/dsh-headless'] },

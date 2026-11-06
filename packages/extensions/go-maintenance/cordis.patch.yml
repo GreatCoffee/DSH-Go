@@ -1,0 +1,7 @@
+# DSH-Go storage maintenance: mounts the bundle that scans and clears derived
+# storage left behind by deleted Sessions — orphan projection-cache records,
+# orphan Session directories, and attachment blobs nothing references. The
+# Settings section that drives it lives in the browser half.
+- insert:
+    - id: go-maintenance
+      name: '@deepseek-ai/dsh-go-maintenance'

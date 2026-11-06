@@ -294,7 +294,8 @@ class JsonlSessionPersistence extends SessionPersistence {
   /** Backend label for diagnostics and effects; shadows `Service.name` without changing the service key. */
   override readonly name = 'session-persistence-jsonl'
 
-  private root: string
+  /** Sessions root; `SessionPersistence.root` lets maintenance walk it. */
+  override readonly root: string
   private compression: JsonlCompression
   /**
    * Bounds directory, header, and stat I/O across every concurrent listing of

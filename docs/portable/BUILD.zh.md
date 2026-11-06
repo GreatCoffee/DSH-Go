@@ -1,5 +1,7 @@
 # 构建 DSH-Go（Windows x64 便携版）
 
+[English](BUILD.md) | 中文
+
 本文是一份从零开始的构建指南：在一台干净的 Windows x64 机器上装好工具链，产出 `dist/DSH-Go`。
 
 ## 0. 前置条件
@@ -96,22 +98,15 @@ dist\DSH-Go\
 
 ## 6. 常见问题
 
-**打包报 `desktop package: the build host cannot run this packaging sequence: vswhere …`**
-没装 C++ 生成工具，或装了但没有 `VC.Tools.x86.x64`。重跑第 1 步的 winget 命令。
+**打包报 `desktop package: the build host cannot run this packaging sequence: vswhere …`** 没装 C++ 生成工具，或装了但没有 `VC.Tools.x86.x64`。重跑第 1 步的 winget 命令。
 
-**`pnpm install` 报 `ERR_PNPM_IGNORED_BUILDS`**
-仓库用 `allowBuilds` 白名单控制原生依赖的安装脚本。按提示把缺少的包名加进 `pnpm-workspace.yaml` 或 `apps/desktop/package.json` 的 `pnpm.onlyBuiltDependencies` 前，先确认它确实需要本地编译。
+**`pnpm install` 报 `ERR_PNPM_IGNORED_BUILDS`** 仓库用 `allowBuilds` 白名单控制原生依赖的安装脚本。按提示把缺少的包名加进 `pnpm-workspace.yaml` 或 `apps/desktop/package.json` 的 `pnpm.onlyBuiltDependencies` 前，先确认它确实需要本地编译。
 
-**构建很慢或磁盘暴涨**
-`.desktop-build/` 保存每个 target 的下载缓存与准备产物，可整体删除后重来；`DSH_DESKTOP_PACKAGE_CACHE_DIR` 可以把缓存挪到别的盘。
+**构建很慢或磁盘暴涨** `.desktop-build/` 保存每个 target 的下载缓存与准备产物，可整体删除后重来；`DSH_DESKTOP_PACKAGE_CACHE_DIR` 可以把缓存挪到别的盘。
 
-**杀毒软件拦截**
-产物是未签名的 Electron 应用，首次运行可能被 SmartScreen 提示。开发者可在本地用自签名证书签名，发布版本则建议购买代码签名证书。
+**杀毒软件拦截** 产物是未签名的 Electron 应用，首次运行可能被 SmartScreen 提示。开发者可在本地用自签名证书签名，发布版本则建议购买代码签名证书。
 
-**路径过长**
-仓库路径深时，打包会在"运行时自检"阶段失败，报 `ImportError: DLL load failed while importing _elementpath: 文件名或扩展名太长`。原因是内置 Python 的 `lxml` 扩展位于 `resources\runtime\...\python\Lib\site-packages\` 下，完整路径已逼近 260 字符上限；即使系统已开启长路径支持，这条加载路径仍会超限。
-实测：工作区在 `D:\Documents\Softwares\DSH-Go\portable\workspace\DSH-Portable\dsh-go` 时失败，换到 `D:\b\dsh-go` 后一次通过。
-规避办法是复制到短路径构建：
+**路径过长** 仓库路径深时，打包会在"运行时自检"阶段失败，报 `ImportError: DLL load failed while importing _elementpath: 文件名或扩展名太长`。原因是内置 Python 的 `lxml` 扩展位于 `resources\runtime\...\python\Lib\site-packages\` 下，完整路径已逼近 260 字符上限；即使系统已开启长路径支持，这条加载路径仍会超限。实测：工作区在 `D:\Documents\Softwares\DSH-Go\portable\workspace\DSH-Portable\dsh-go` 时失败，换到 `D:\b\dsh-go` 后一次通过。规避办法是复制到短路径构建：
 
 ```powershell
 robocopy <repo> D:\b\dsh-go /E /MT:16 /XJ /XD node_modules .desktop-build dist .pnpm-store

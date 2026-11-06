@@ -1,0 +1,22 @@
+# Bilingual-pair consistency record for SYNC.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
+#   pnpm run verify-translation-pairing --write docs/portable/SYNC.md
+/following-official-updates:
+  en: aeb71c510ab7de43
+  zh: 9130a0630c99143e
+/following-official-updates/why-keep-the-full-history:
+  en: be8dfaf261e2b77b
+  zh: 9329d7b6deb2afe8
+/following-official-updates/one-command:
+  en: 9a637afb617b68d9
+  zh: 8f890c8c0f51b111
+/following-official-updates/where-conflicts-land:
+  en: d33e0c6229a58966
+  zh: ad2a8362bd1abd22
+/following-official-updates/after-merging:
+  en: 0f1acddecddb7ffc
+  zh: ede610b6554f239b
+/following-official-updates/version-identification:
+  en: 262a981d5943e643
+  zh: 1296ae78797a97a5

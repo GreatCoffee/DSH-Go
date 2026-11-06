@@ -323,9 +323,28 @@ async write(session: Session): Promise<void>
  * @returns the projection cut at the log end.
  */
 coldSnapshot( meta: SessionHeader, inheritedEventCount: SessionLogOffset, events: readonly SessionEvent[], ): ProjectionSnapshot
+
+/**
+ * Stored checkpoints whose Session the persistence store no longer lists.
+ *
+ * Maintenance reads this instead of opening the domain a second time:
+ * the facility allows one open per domain and this service holds it.
+ * @param known - ids the persistence store still names.
+ * @returns the unreachable ids, in no particular order.
+ */
+async orphanIds(known: ReadonlySet<SessionId>): Promise<SessionId[]>
+
+/**
+ * Drop every stored checkpoint whose Session the store no longer lists.
+ *
+ * One batch write, so a partial sweep never leaves the table half pruned.
+ * @param known - ids the persistence store still names.
+ * @returns how many records were removed.
+ */
+async pruneOrphans(known: ReadonlySet<SessionId>): Promise<number>
 ```
 
-Types: [Session](session.zh.md) · [SessionEvent](session.zh.md) · [SessionHeader](persistence.zh.md) · [SessionLogOffset](session.zh.md)
+Types: [Session](session.zh.md) · [SessionEvent](session.zh.md) · [SessionHeader](persistence.zh.md) · [SessionId](core.zh.md) · [SessionLogOffset](session.zh.md)
 
 Source: [`packages/session/session-projection-cache/src/index.ts`](../../packages/session/session-projection-cache/src/index.ts)
 

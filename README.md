@@ -14,7 +14,7 @@ English | [中文](README.zh.md)
 >
 > Treat it as unreviewed third-party software. Read the diff before you run it, keep a backup of `portable\`, never point it at data you cannot afford to lose, and use it entirely at your own risk. The MIT license provides no warranty of any kind.
 >
-> - Portable build guide: [docs/portable/README.zh.md](docs/portable/README.zh.md) · Build: [docs/portable/BUILD.zh.md](docs/portable/BUILD.zh.md) · Upstream sync: [docs/portable/SYNC.zh.md](docs/portable/SYNC.zh.md)
+> - Portable build guide: [docs/portable/README.md](docs/portable/README.md) · Build: [docs/portable/BUILD.md](docs/portable/BUILD.md) · Upstream sync: [docs/portable/SYNC.md](docs/portable/SYNC.md)
 > - Build with `pwsh scripts/build-portable.ps1`; follow upstream with `pwsh scripts/sync-upstream.ps1`; update an installation with `pwsh scripts/update-portable.ps1`.
 
 DeepSeek Harness (`dsh`) is an open-source agent harness developed by [DeepSeek AI](https://deepseek.com).

@@ -394,6 +394,35 @@ export class SessionProjectionCache extends Service {
   }
 
   /**
+   * Stored checkpoints whose Session the persistence store no longer lists.
+   *
+   * Maintenance reads this instead of opening the domain a second time:
+   * the facility allows one open per domain and this service holds it.
+   * @param known - ids the persistence store still names.
+   * @returns the unreachable ids, in no particular order.
+   */
+  async orphanIds(known: ReadonlySet<SessionId>): Promise<SessionId[]> {
+    const orphans: SessionId[] = []
+    for (const id of this.requireTable().keys()) {
+      if (!known.has(id)) orphans.push(id)
+    }
+    return orphans
+  }
+
+  /**
+   * Drop every stored checkpoint whose Session the store no longer lists.
+   *
+   * One batch write, so a partial sweep never leaves the table half pruned.
+   * @param known - ids the persistence store still names.
+   * @returns how many records were removed.
+   */
+  async pruneOrphans(known: ReadonlySet<SessionId>): Promise<number> {
+    const orphans = await this.orphanIds(known)
+    if (orphans.length === 0) return 0
+    return await this.requireTable().deleteMany(orphans)
+  }
+
+  /**
    * Drop one session's stored checkpoint after its durable log is gone.
    *
    * Fail-soft on purpose: the deletion already succeeded, so a failed

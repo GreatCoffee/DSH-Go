@@ -153,6 +153,16 @@ export abstract class SessionPersistence extends Service {
   /** Process-local instance identity, stable through Context proxies and distinct after service replacement. */
   readonly identity: symbol = Symbol('sessionPersistence')
 
+  /**
+   * Directory this store keeps its Sessions under, when the backend owns one.
+   *
+   * Maintenance walks beside the logs — a crash or a deletion from an older
+   * build can leave a directory no header names — and cannot rebuild the
+   * layout itself without duplicating every encoding rule. Backends that keep
+   * no directory (a remote store, an in-memory fake) leave this `undefined`.
+   */
+  declare readonly root?: string
+
   constructor(ctx: Context) {
     super(ctx, 'sessionPersistence')
   }

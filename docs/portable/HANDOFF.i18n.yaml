@@ -1,0 +1,40 @@
+# Bilingual-pair consistency record for HANDOFF.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
+#   pnpm run verify-translation-pairing --write docs/portable/HANDOFF.md
+/dsh-go-current-status-and-operations-manual:
+  en: 4b2c2b98c25681bc
+  zh: 73cdd886a6ac25b7
+/dsh-go-current-status-and-operations-manual/1-current-baseline:
+  en: 26daf9d1c36dc905
+  zh: 4021f44f71fd9f28
+/dsh-go-current-status-and-operations-manual/2-directory-layout:
+  en: 6a1d82abde09825e
+  zh: 03af6f6a1ffd2fd3
+/dsh-go-current-status-and-operations-manual/3-environment-prerequisites:
+  en: 65af80562bed3e0e
+  zh: f2ed6ae427e9c46a
+/dsh-go-current-status-and-operations-manual/4-the-four-workflows:
+  en: 6b94b006b219d61e
+  zh: a811e83a4c9b5338
+/dsh-go-current-status-and-operations-manual/4-the-four-workflows/4-1-build:
+  en: 70da67c7293e223f
+  zh: 0ffd969103f619f6
+/dsh-go-current-status-and-operations-manual/4-the-four-workflows/4-2-release:
+  en: cb611e832c0c3ae8
+  zh: 90c0b21242b47381
+/dsh-go-current-status-and-operations-manual/4-the-four-workflows/4-3-update-user-perspective:
+  en: 04a3c8f5715fbb05
+  zh: f66d03dc93ad0cad
+/dsh-go-current-status-and-operations-manual/4-the-four-workflows/4-4-following-upstream:
+  en: c790ad40f7259a96
+  zh: 68e19cdc0155e48a
+/dsh-go-current-status-and-operations-manual/5-known-pitfalls-in-the-order-encountered:
+  en: 990970e43838db5f
+  zh: 21f7dbd80c673b41
+/dsh-go-current-status-and-operations-manual/6-data-boundaries-and-incidents:
+  en: 2868811b5e8c83ab
+  zh: 708c9a9675316cae
+/dsh-go-current-status-and-operations-manual/7-todo:
+  en: 1174092871c7dcf8
+  zh: 8f54e6bc9762e636

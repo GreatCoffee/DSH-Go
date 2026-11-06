@@ -1,0 +1,22 @@
+/** Public shapes of the maintenance Remote surface. */
+
+/** Category a clean targets; `all` clears every category in one pass. */
+export type MaintenanceTarget = 'projections' | 'sessions' | 'attachments' | 'all'
+
+/** What a clean would reclaim, per category. */
+export interface MaintenanceReport {
+  /** Checkpoint records whose Session the store no longer lists. */
+  readonly projections: { readonly count: number }
+  /** Session directories no listed header names. */
+  readonly sessions: { readonly count: number; readonly bytes: number }
+  /** Image objects no surviving Session log references. */
+  readonly attachments: { readonly count: number; readonly bytes: number }
+}
+
+/** What a clean actually removed. */
+export interface MaintenanceOutcome {
+  /** Removed record counts per category. */
+  readonly removed: { readonly projections: number; readonly sessions: number; readonly attachments: number }
+  /** Bytes freed on disk; projection records are counted as records only. */
+  readonly freedBytes: number
+}

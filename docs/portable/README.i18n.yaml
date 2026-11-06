@@ -1,0 +1,31 @@
+# Bilingual-pair consistency record for README.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
+#   pnpm run verify-translation-pairing --write docs/portable/README.md
+/dsh-go-portable-build:
+  en: 97a42b8ca67605cb
+  zh: 515c16e42b66cb39
+/dsh-go-portable-build/directory-layout:
+  en: aa868a8330bad457
+  zh: d24876326384eeee
+/dsh-go-portable-build/what-happens-during-a-move:
+  en: ca45ce5ea17c63c8
+  zh: b2ee845a50249369
+/dsh-go-portable-build/network-drives:
+  en: be6a339b13f78509
+  zh: 9ced53c741ab4070
+/dsh-go-portable-build/deleting-a-session-built-into-dsh-go:
+  en: e03fd088dd56eabd
+  zh: cfd856f9a70057fb
+/dsh-go-portable-build/maintenance-cleaning-up-leftovers:
+  en: dd1baab87c363ebd
+  zh: c31dd70b0a5acb05
+/dsh-go-portable-build/credentials:
+  en: 968c8a496b22c50e
+  zh: 508dc93e1a84e73b
+/dsh-go-portable-build/official-auto-update-disabled:
+  en: 5e2357438b8887e8
+  zh: 94b6009bdb24c221
+/dsh-go-portable-build/updating-itself:
+  en: 984ff3b97bd73fd5
+  zh: 748cf016db21cbe4

@@ -44,7 +44,7 @@ New-Item -ItemType Directory -Force -Path (Split-Path $output) | Out-Null
 & robocopy $unpacked $output /MIR /NFL /NDL /NJH /NJS /NP | Out-Null
 if ($LASTEXITCODE -ge 8) { throw "robocopy failed with exit code $LASTEXITCODE" }
 
-foreach ($directory in 'dsh-home', 'user-data', 'workspace', 'cache', 'temp') {
+foreach ($directory in 'dsh-home', 'user-data', 'workspace', 'cache', 'config', 'state', 'temp') {
   New-Item -ItemType Directory -Force -Path (Join-Path $output "portable/$directory") | Out-Null
 }
 
@@ -65,6 +65,9 @@ Notes:
   Set DSH_PERMISSION_MODE=workspace-write to force confinement on local disks.
 - Run one copy at a time. Two machines writing the same portable directory at
   once can corrupt session logs.
+- XDG_CONFIG_HOME, XDG_CACHE_HOME, and XDG_STATE_HOME point at portable/config,
+  portable/cache, and portable/state, so plugins and tools that follow the XDG
+  base directory specification keep their files inside this directory too.
 '@
 Set-Content -Path (Join-Path $output 'portable/README.txt') -Value $notice -Encoding utf8
 

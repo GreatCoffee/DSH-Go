@@ -94,7 +94,7 @@ it('turns an active-session refusal into a localized message', async () => {
   const dialog = b.registered[0]?.inject?.()
   b.deleteSession.mockResolvedValueOnce({
     ok: false,
-    error: new RemoteError('workspace/session-active', 'still running', { sessionId: 'gone', activity: [] }),
+    error: new RemoteError('workspace/session-active', 'still running', { sessionId: SessionId('gone'), activity: [] }),
   } as never)
   await expect(dialog?.deleteSession(SessionId('gone')))
     .rejects.toThrow('该会话仍在运行，请先停止其任务后再删除。')

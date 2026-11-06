@@ -533,7 +533,7 @@ describe('ClientWorkspaceModel', () => {
     baseline(model, [workspace('main', [sid('gone'), sid('kept')])], [sid('gone')], [sid('kept')])
 
     remote.onDeleteSession = () => Promise.resolve(workspaceError(
-      new RemoteError('workspace/session-active', 'still running', { sessionId: 'gone', activity: [] }),
+      new RemoteError('workspace/session-active', 'still running', { sessionId: sid('gone'), activity: [] }),
     ))
     await expect(model.deleteSession(sid('gone'))).resolves.toMatchObject({ ok: false })
     // A refused delete leaves every projection intact so the row survives.

@@ -474,6 +474,18 @@ export class JsonlBackendTracker {
   }
 
   /**
+   * Drop every in-process trace of a session that no longer exists on disk, so
+   * a deleted session is neither listed as pending nor accepted as a live
+   * event route afterwards. Callers refuse while an open write handle still
+   * owns the id, so no route can observe the removal.
+   * @param id - the removed session id.
+   */
+  forget(id: SessionId): void {
+    this.pending.delete(id)
+    this.writers.delete(id)
+  }
+
+  /**
    * Track one open handle for teardown and, for a write handle, bind it as
    * the session's live event route.
    * @param handle - the just-constructed handle.

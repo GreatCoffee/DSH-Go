@@ -111,7 +111,7 @@ pwsh scripts/build-portable.ps1          # 在短路径副本里
 5. **不要用 `$home` 当变量名**：它是 PowerShell 自动只读变量（= 用户目录）。见第 6 节事故。
 6. **`gh` 会误判仓库**：仓库同时有 `upstream` 远程时，`gh release` 可能解析到官方仓库，必须显式 `--repo GreatCoffee/DSH-Go`。
 7. **API 限流**：匿名调用 GitHub REST API 会被限流，更新器因此改为解析 `releases/latest` 重定向，不要改回去。
-8. **会话空壳**：只有头部、没有事件的会话在 UI 里删不掉，需要在 `sessions\<projectKey>\session-*` 层删除并清 `storages\session_projcache`。
+8. **会话空壳**：只有头部、没有事件的会话过去在 UI 里删不掉，需要在 `sessions\<projectKey>\session-*` 层删除并清 `storages\session_projcache`。现在多了会话菜单的「删除会话」（`@deepseek-ai/dsh-go-session-delete`），能列出但删不掉的空壳用它就行；只有连列表都刷不出来的残留才回退到手工删目录。
 9. **发布期间 release 一直是 Draft**：`gh release create` 传 407 MB 资产要十几分钟，期间 `isDraft` 返回 `true`、`assets` 里只有已传完的 `.sha256`，传完才转正并标记 Latest。不要当成失败去重跑。
 10. **`netstat -e` 计数在 4 GiB 回绕**：累计字节从 4,142,064,790 掉到 335,306,974 是计数器翻转，不是断网；判断上传是否在动只能看相邻采样增量。
 11. **插件状态默认落在用户目录**：XDG 感知的插件（如 billion-context）会写 `~/.config`、`~/.cache`、`~/.local/state`。portable 已在 `applyPortableEnvironment` 里把 `XDG_CONFIG_HOME`/`XDG_CACHE_HOME`/`XDG_STATE_HOME` 指向 `portable\config|cache|state`；升级前留下的用户目录副本要手动搬走。
@@ -135,6 +135,7 @@ pwsh scripts/build-portable.ps1          # 在短路径副本里
 |---|---|
 | 插件兼容性实测 | 已完成（dsh-ops 0.4.4 因 `engines.dsh <0.2.2-0` 被拒，0.5.0 适配 0.2.2-rc.1） |
 | 插件状态目录随包移动 | 已完成（XDG 三变量，发布 `go-1869e914bd`） |
+| 删除会话（自带 bundle `@deepseek-ai/dsh-go-session-delete`） | 已实现并本地通过测试，**尚未打包发布**；下次构建会带上，`web` 模板默认启用 |
 | 升级后插件保留 | 已完成（真实发布包演练） |
 | macOS 便携 | 挂起（需 Mac 构建） |
 | Linux 便携 | 挂起（Desktop 非官方发布目标，可行路径是 CLI/Web 便携包） |

@@ -1,0 +1,6 @@
+{
+  "meta": {
+    "title": "Delete session",
+    "description": "Adds a delete entry below Archive in the Session menu, with a permanent-deletion confirmation dialog."
+  }
+}

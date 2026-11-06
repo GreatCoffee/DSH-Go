@@ -381,6 +381,9 @@ importers:
       '@deepseek-ai/dsh-fs-local':
         specifier: workspace:*
         version: link:../../packages/fs/fs-local
+      '@deepseek-ai/dsh-go-session-delete':
+        specifier: workspace:*
+        version: link:../../packages/extensions/go-session-delete
       '@deepseek-ai/dsh-goal':
         specifier: workspace:*
         version: link:../../packages/goal/goal
@@ -11812,6 +11815,48 @@ importers:
       '@deepseek-ai/dsh-typert-protocol':
         specifier: workspace:*
         version: link:../../typert/protocol
+
+  packages/extensions/go-session-delete:
+    devDependencies:
+      '@deepseek-ai/cordis':
+        specifier: workspace:~
+        version: link:../../../vendor/cordis
+      '@deepseek-ai/dsh-api-remotes':
+        specifier: workspace:*
+        version: link:../../api/remotes
+      '@deepseek-ai/dsh-api-workspace-controller':
+        specifier: workspace:*
+        version: link:../../api/workspace-controller
+      '@deepseek-ai/dsh-client-locale':
+        specifier: workspace:*
+        version: link:../../client/locale
+      '@deepseek-ai/dsh-client-store':
+        specifier: workspace:*
+        version: link:../../client/store
+      '@deepseek-ai/dsh-client-ui-context-menu':
+        specifier: workspace:*
+        version: link:../../client/ui-context-menu
+      '@deepseek-ai/dsh-client-ui-layout':
+        specifier: workspace:*
+        version: link:../../client/ui-layout
+      '@deepseek-ai/dsh-client-ui-primitives':
+        specifier: workspace:*
+        version: link:../../client/ui-primitives
+      '@deepseek-ai/dsh-client-ui-renderer':
+        specifier: workspace:*
+        version: link:../../client/ui-renderer
+      '@deepseek-ai/dsh-client-ui-slots':
+        specifier: workspace:*
+        version: link:../../client/ui-slots
+      '@deepseek-ai/dsh-client-ui-workspace':
+        specifier: workspace:*
+        version: link:../../client/ui-workspace
+      '@deepseek-ai/dsh-session':
+        specifier: workspace:*
+        version: link:../../core/session
+      react:
+        specifier: ^18.2.0
+        version: 18.3.1
 
   packages/extensions/tool-cordis:
     devDependencies:

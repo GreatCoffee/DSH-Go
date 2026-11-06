@@ -24,6 +24,8 @@ import {
   SessionPersistence, SessionPersistenceRevision, SessionFormatUnsupportedError,
   SessionPersistenceCorruptionError,
   SessionAlreadyExistsError, SessionPersistenceNotFoundError,
+  SessionAlreadyOwnedError,
+  type SessionPersistenceDeleteOptions,
   assertStoredId, materializeCreateHeader, sessionFormatVersionRefusal, validateStoredEvents,
   type SessionAccess, type SessionHandle,
   type SessionHandleReadResult,
@@ -511,6 +513,44 @@ class JsonlSessionPersistence extends SessionPersistence {
       if (isENOENT(error)) return undefined
       throw error
     }
+  }
+
+  /**
+   * Permanently remove one stored session's artifact directory, including every
+   * retained generation and the write lease.
+   *
+   * Refuses while a write handle still owns the session: in this process the
+   * tracker's open handles prove it, and across processes the kernel write lock
+   * on the session directory does. The directory goes away in one recursive
+   * delete after that lock is released, so a concurrent writer either already
+   * failed its own claim or reopens a path that no longer exists.
+   * @param id - the stored session to remove.
+   * @param options - optional cancellation.
+   * @throws {SessionPersistenceNotFoundError} when the session is unknown here.
+   * @throws {SessionAlreadyOwnedError} while an active write handle owns it.
+   */
+  override async delete(id: SessionId, options?: SessionPersistenceDeleteOptions): Promise<void> {
+    options?.signal?.throwIfAborted()
+    await this.ensureRootEncoding()
+    options?.signal?.throwIfAborted()
+    for (const handle of this.tracker.openHandles) {
+      if (handle instanceof JsonlSessionHandle && handle.id === id && handle.access === 'write') {
+        throw new SessionAlreadyOwnedError(id)
+      }
+    }
+    const snapshot = await this.stat(id, options)
+    if (snapshot === undefined) throw new SessionPersistenceNotFoundError(id)
+    const dir = snapshot.location === undefined
+      ? sessionDir(this.root, snapshot.header.cwd, id)
+      : dirname(snapshot.location.path)
+    // Claim and immediately release the cross-process write lock: holding it
+    // refuses another process's live writer, releasing it lets the recursive
+    // delete run without the lock file's own exclusion blocking the removal.
+    const lease = await SessionWriteLease.acquire(dir, id)
+    await lease.release()
+    options?.signal?.throwIfAborted()
+    await rm(dir, { recursive: true, force: true })
+    this.tracker.forget(id)
   }
 
   /**

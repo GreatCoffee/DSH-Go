@@ -124,6 +124,16 @@ export interface WorkspaceArchiveSessionRequest {
   readonly stopActivity?: boolean
 }
 
+/** Session requested for permanent removal from storage and every grouping surface. */
+export interface WorkspaceDeleteSessionRequest {
+  readonly sessionId: SessionId
+}
+
+/** Acknowledgement that the Session's durable log and registry traces are gone. */
+export interface WorkspaceDeleteSessionValue {
+  readonly sessionId: SessionId
+}
+
 /** Session requested for restoration from the archived Session list. */
 export interface WorkspaceUnarchiveSessionRequest {
   readonly sessionId: SessionId

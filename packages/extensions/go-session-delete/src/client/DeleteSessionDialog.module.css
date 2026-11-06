@@ -1,0 +1,16 @@
+.deleteAction:not(:disabled) {
+  color: var(--dsw-alias-state-error-primary);
+}
+
+.status {
+  font-size: 12px;
+  line-height: 18px;
+  color: var(--dsw-alias-label-secondary);
+}
+
+.error {
+  margin-top: 8px;
+  font-size: 12px;
+  line-height: 18px;
+  color: var(--dsw-alias-state-error-primary);
+}

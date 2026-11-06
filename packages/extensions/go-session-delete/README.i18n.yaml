@@ -1,0 +1,34 @@
+# Bilingual-pair consistency record for README.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
+#   pnpm run verify-translation-pairing --write packages/extensions/go-session-delete/README.md
+/:
+  en: aeaebd56fd7895a4
+  zh: 3cdb8a781cffce63
+/deepseek-ai-dsh-go-session-delete:
+  en: 2ea1364f4c51ec4d
+  zh: 93b032c73d56d05b
+/deepseek-ai-dsh-go-session-delete/summary:
+  en: 44439f3b896eada7
+  zh: 258321eed840bb9f
+/deepseek-ai-dsh-go-session-delete/table-of-contents:
+  en: 76368b6b1da79c80
+  zh: b177e94c2b067a45
+/deepseek-ai-dsh-go-session-delete/use-this-package:
+  en: 9e2a4dcb2b7cbf0a
+  zh: c67289992c2eed83
+/deepseek-ai-dsh-go-session-delete/use-this-package/what-deletion-means:
+  en: 0fa606a3bb56cb12
+  zh: f67b7469dbd1667d
+/deepseek-ai-dsh-go-session-delete/understand-the-implementation:
+  en: 6520b5e9d82b0ad0
+  zh: 060a3fd9c54b418a
+/deepseek-ai-dsh-go-session-delete/model-experience:
+  en: 7b325f129e5f5cde
+  zh: 085a285e4e2b778c
+/deepseek-ai-dsh-go-session-delete/known-limitations-and-deferred-work:
+  en: 6b578288112375f2
+  zh: 54a8844783f120fe
+/deepseek-ai-dsh-go-session-delete/dev-note:
+  en: 404722f5fde20c2c
+  zh: 9668026e084d2678

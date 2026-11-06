@@ -8,6 +8,8 @@ import type {
   WorkspaceCreateRequest,
   WorkspaceCreateValue,
   WorkspaceDeleteRequest,
+  WorkspaceDeleteSessionRequest,
+  WorkspaceDeleteSessionValue,
   WorkspaceDeleteValue,
   WorkspaceFollowFrame,
   WorkspaceInsertBeforeRequest,
@@ -94,6 +96,10 @@ class FakeWorkspaceRemote implements WorkspaceRemote {
     request: WorkspaceUnarchiveSessionRequest,
   ) => Promise<RemoteResult<WorkspaceArchiveValue>> = request =>
     Promise.resolve(remoteOk({ archivedSessionIds: [request.sessionId] }))
+  onDeleteSession: (
+    request: WorkspaceDeleteSessionRequest,
+  ) => Promise<RemoteResult<WorkspaceDeleteSessionValue>> = request =>
+    Promise.resolve(remoteOk({ sessionId: request.sessionId }))
   onPinSession: (
     request: WorkspacePinSessionRequest,
   ) => Promise<RemoteResult<WorkspacePinValue>> = request =>
@@ -136,6 +142,11 @@ class FakeWorkspaceRemote implements WorkspaceRemote {
   unarchiveSession(request: WorkspaceUnarchiveSessionRequest): Promise<RemoteResult<WorkspaceArchiveValue>> {
     this.record('unarchiveSession', request)
     return this.onUnarchiveSession(request)
+  }
+
+  deleteSession(request: WorkspaceDeleteSessionRequest): Promise<RemoteResult<WorkspaceDeleteSessionValue>> {
+    this.record('deleteSession', request)
+    return this.onDeleteSession(request)
   }
 
   pinSession(request: WorkspacePinSessionRequest): Promise<RemoteResult<WorkspacePinValue>> {
@@ -513,6 +524,26 @@ describe('ClientWorkspaceModel', () => {
 
     await expect(model.archiveSession(sid('pinned'))).resolves.toMatchObject({ ok: true })
     expect(model.getSnapshot().archivedSessionIds).toEqual(['pinned'])
+    expect(model.getSnapshot().pinnedSessionIds).toEqual(['kept'])
+  })
+
+  it('prunes a deleted Session from rows, archive, and pin sets on success only', async () => {
+    const remote = new FakeWorkspaceRemote()
+    const model = modelFor(remote)
+    baseline(model, [workspace('main', [sid('gone'), sid('kept')])], [sid('gone')], [sid('kept')])
+
+    remote.onDeleteSession = () => Promise.resolve(workspaceError(
+      new RemoteError('workspace/session-active', 'still running', { sessionId: 'gone', activity: [] }),
+    ))
+    await expect(model.deleteSession(sid('gone'))).resolves.toMatchObject({ ok: false })
+    // A refused delete leaves every projection intact so the row survives.
+    expect(model.getSnapshot().items[0]?.sessionIds).toEqual(['gone', 'kept'])
+    expect(model.getSnapshot().archivedSessionIds).toEqual(['gone'])
+
+    remote.onDeleteSession = request => Promise.resolve(remoteOk({ sessionId: request.sessionId }))
+    await expect(model.deleteSession(sid('gone'))).resolves.toMatchObject({ ok: true })
+    expect(model.getSnapshot().items[0]?.sessionIds).toEqual(['kept'])
+    expect(model.getSnapshot().archivedSessionIds).toEqual([])
     expect(model.getSnapshot().pinnedSessionIds).toEqual(['kept'])
   })
 

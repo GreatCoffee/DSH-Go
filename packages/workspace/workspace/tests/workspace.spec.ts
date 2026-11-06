@@ -56,7 +56,10 @@ async function harness(options: HarnessOptions = {}) {
     listed.map(header => ({ header, revision: SessionPersistenceRevision(`rev-${header.id}`) })))
   const open = vi.fn(() => { throw new Error('event bodies must not be opened') })
   const stat = vi.fn(() => { throw new Error('per-session stat must not be needed') })
-  ctx.provide('sessionPersistence', { list, open, stat } as never)
+  const remove = vi.fn(async (id: SessionId) => {
+    listed = listed.filter(entry => entry.id !== id)
+  })
+  ctx.provide('sessionPersistence', { list, open, stat, delete: remove } as never)
 
   if (options.sessionStore === true) {
     await ctx.plugin(SessionStore)
@@ -83,6 +86,7 @@ async function harness(options: HarnessOptions = {}) {
     list,
     open,
     stat,
+    remove,
     setSessions: (headers: SessionHeader[]) => { listed = headers },
   }
 }
@@ -1201,6 +1205,57 @@ describe('registry-global session archive', () => {
     )
     const upgraded = await harness({ pool: legacy })
     expect(upgraded.registry.archivedSessionIds).toEqual([])
+  })
+})
+
+describe('registry-global session deletion', () => {
+  it('deletes the durable log first, then every registry trace of the session', async () => {
+    const dir = await makeDir('delete-home')
+    const result = await harness({ sessions: [header('kept', dir, 100), header('gone', dir, 200)] })
+    const workspace = result.registry.list().find(entry => entry.sessionIds.includes('gone'))!
+    await result.registry.archiveSession(SessionId('kept'))
+    await result.registry.pinSession(SessionId('gone'))
+
+    const order: string[] = []
+    result.remove.mockImplementation(async () => { order.push('persistence') })
+    result.ctx.on('domain/changed', (change) => { if (change.table !== '') order.push('accounting') })
+
+    await result.registry.deleteSession(SessionId('gone'))
+
+    // The durable log is the fact the rest derives from, so it goes first.
+    expect(order[0]).toBe('persistence')
+    expect(order).toContain('accounting')
+    expect(result.remove).toHaveBeenCalledWith('gone')
+    // Accounting, archive, and pin sets all lose the id in the same operation.
+    expect(workspace.sessionIds).not.toContain('gone')
+    expect(result.registry.archivedSessionIds).toEqual(['kept'])
+    expect(result.registry.pinnedSessionIds).toEqual([])
+    expect(storedState(result.pool).pinnedSessionIds).toEqual([])
+    // The kept session and its workspace are untouched.
+    expect(workspace.sessionIds).toContain('kept')
+    expect(result.registry.list()).toContain(workspace)
+  })
+
+  it('rejects an unknown id before touching persistence', async () => {
+    const dir = await makeDir('delete-unknown')
+    const result = await harness({ sessions: [header('known', dir, 100)] })
+    await expect(result.registry.deleteSession(SessionId('ghost')))
+      .rejects.toThrow(/cannot delete session 'ghost'/)
+    expect(result.remove).not.toHaveBeenCalled()
+  })
+
+  it('refuses a session with running work instead of deleting under it', async () => {
+    const dir = await makeDir('delete-active')
+    const result = await harness({ sessions: [header('busy', dir, 100)] })
+    result.ctx.on('workspace/session-activity', async () => [{ kind: 'probe' }])
+
+    await expect(result.registry.deleteSession(SessionId('busy'))).rejects.toMatchObject({
+      name: 'WorkspaceActiveSessionError',
+      sessionId: 'busy',
+      activity: [{ kind: 'probe' }],
+    })
+    expect(result.remove).not.toHaveBeenCalled()
+    expect(result.registry.list().find(entry => entry.sessionIds.includes('busy'))).toBeDefined()
   })
 })
 

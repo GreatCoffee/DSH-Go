@@ -49,7 +49,7 @@ export class WorkspaceUnknownSessionError extends Error {
    * @param sessionId - The unknown session id.
    * @param verb - The registry operation that named the session.
    */
-  constructor(readonly sessionId: SessionId, verb: 'archive' | 'pin') {
+  constructor(readonly sessionId: SessionId, verb: 'archive' | 'pin' | 'delete') {
     super(`cannot ${verb} session '${sessionId}': live sessions and session persistence hold no such session`)
     this.name = 'WorkspaceUnknownSessionError'
   }
@@ -309,6 +309,55 @@ export class WorkspaceRegistry extends Service {
    */
   delete(id: WorkspaceId): Promise<boolean> {
     return this.enqueueOperation(() => this.deleteKnown(id))
+  }
+
+  /**
+   * Permanently remove one Session: its durable log through
+   * `sessionPersistence` and every registry trace of it — workspace
+   * accounting, the archive and pin sets, and the canonical-cwd header index.
+   *
+   * Removal is irreversible, so a Session whose work is still running is
+   * refused with {@link WorkspaceActiveSessionError} — archiving stops work,
+   * deleting does not, and the reader that owns the live Session would
+   * otherwise keep appending to a log that no longer exists. The durable log
+   * goes first because it is the fact the rest derives from: a failure there
+   * leaves the registry intact and the Session readable. Once the log is gone,
+   * the id is dropped from every workspace record and from the archive and pin
+   * sets in the same queued operation, and its header index entries are
+   * cleared, so no grouping surface, `sessionKnown` check, or later
+   * `resolveByPath` resurrects it. Deletion never touches the workspace
+   * directory or any other Session.
+   * @param sessionId - the Session to remove.
+   * @returns resolution after the log and every registry trace are gone.
+   * @throws {WorkspaceUnknownSessionError} when neither live state nor storage knows the Session.
+   * @throws {WorkspaceActiveSessionError} while the Session has running work.
+   */
+  deleteSession(sessionId: SessionId): Promise<void> {
+    return this.enqueueOperation(async () => {
+      if (!(await this.sessionKnown(sessionId))) {
+        throw new WorkspaceUnknownSessionError(sessionId, 'delete')
+      }
+      const activity = await this.ctx.waterfall(
+        'workspace/session-activity', { sessionId }, () => Promise.resolve([]),
+      )
+      if (activity.length > 0) throw new WorkspaceActiveSessionError(sessionId, activity)
+      await this.ctx.sessionPersistence.delete(sessionId)
+      const state = this.requireState()
+      for (const workspaceId of state.workspaceIds) {
+        await this.entities.get(workspaceId)?.detachSession(sessionId)
+      }
+      const current = this.requireState()
+      const archivedSessionIds = current.archivedSessionIds.filter(id => id !== sessionId)
+      const pinnedSessionIds = current.pinnedSessionIds.filter(id => id !== sessionId)
+      if (archivedSessionIds.length !== current.archivedSessionIds.length
+        || pinnedSessionIds.length !== current.pinnedSessionIds.length) {
+        await this.setState({ ...current, archivedSessionIds, pinnedSessionIds })
+      }
+      this.headers.delete(sessionId)
+      this.sessionPaths.delete(sessionId)
+      this.missingSessionPaths.delete(sessionId)
+      this.invalidSessionPaths.delete(sessionId)
+    })
   }
 
   /**

@@ -7,6 +7,8 @@ import type { RemoteFailure, RemoteResult, TypertClientRemote } from '@deepseek-
 import type {
   WorkspaceArchiveSessionRequest,
   WorkspaceArchiveValue,
+  WorkspaceDeleteSessionRequest,
+  WorkspaceDeleteSessionValue,
   WorkspaceBaseline,
   WorkspaceCreateRequest,
   WorkspaceCreateValue,
@@ -204,6 +206,37 @@ export class ClientWorkspaceModel implements WorkspaceFollowSink {
       this.installPinned(this.pinnedSessionIds.filter(id => id !== sessionId))
     }
     return result
+  }
+
+  /**
+   * Permanently delete one Session and drop it from the cached projections.
+   *
+   * The Host answer is authoritative: the follow feed also omits the id, but
+   * the row must disappear as soon as the delete commits rather than after the
+   * next workspace frame, so a successful reply prunes the local copies.
+   * @param sessionId - Session to delete.
+   * @returns generated Remote result; a running Session resolves `ok: false`.
+   */
+  async deleteSession(
+    sessionId: WorkspaceDeleteSessionRequest['sessionId'],
+  ): Promise<RemoteResult<WorkspaceDeleteSessionValue>> {
+    const result = await this.remote.deleteSession({ sessionId })
+    if (result.ok) this.forgetSession(sessionId)
+    return result
+  }
+
+  private forgetSession(sessionId: WorkspaceDeleteSessionRequest['sessionId']): void {
+    this.installArchived(this.archivedSessionIds.filter(id => id !== sessionId))
+    this.installPinned(this.pinnedSessionIds.filter(id => id !== sessionId))
+    let changed = false
+    const items = this.items.map((item) => {
+      if (!item.sessionIds.includes(sessionId)) return item
+      changed = true
+      return { ...item, sessionIds: item.sessionIds.filter(id => id !== sessionId) }
+    })
+    if (!changed) return
+    this.items = items
+    this.invalidate()
   }
 
   /**

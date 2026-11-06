@@ -18,6 +18,8 @@ import type {
   WorkspaceCreateRequest,
   WorkspaceCreateValue,
   WorkspaceDeleteRequest,
+  WorkspaceDeleteSessionRequest,
+  WorkspaceDeleteSessionValue,
   WorkspaceDeleteValue,
   WorkspaceInsertBeforeRequest,
   WorkspaceInsertSessionBeforeRequest,
@@ -180,6 +182,37 @@ export class WorkspaceCommands {
       throw error
     }
     return { archivedSessionIds: [...this.ctx.workspaceRegistry.archivedSessionIds] }
+  }
+
+  /**
+   * Permanently delete one Session: its durable log and every registry trace.
+   *
+   * Unlike {@link archiveSession} this is irreversible and stops nothing, so a
+   * Session with running work is refused as `workspace/session-active` rather
+   * than silently losing its log mid-turn. The UI confirms before calling.
+   * @param request - Session identity to delete.
+   * @returns the deleted Session id once storage and registry agree it is gone.
+   * @throws {RemoteError} `session/not-found` when nothing knows the id,
+   * `workspace/session-active` while its work is still running.
+   */
+  async deleteSession(request: WorkspaceDeleteSessionRequest): Promise<WorkspaceDeleteSessionValue> {
+    try {
+      await this.ctx.workspaceRegistry.deleteSession(request.sessionId)
+    } catch (error) {
+      if (error instanceof WorkspaceUnknownSessionError) {
+        throw new RemoteError('session/not-found', error.message, { sessionId: request.sessionId }, { cause: error })
+      }
+      if (error instanceof WorkspaceActiveSessionError) {
+        throw new RemoteError(
+          'workspace/session-active',
+          error.message,
+          { sessionId: request.sessionId, activity: error.activity },
+          { cause: error },
+        )
+      }
+      throw error
+    }
+    return { sessionId: request.sessionId }
   }
 
   /**

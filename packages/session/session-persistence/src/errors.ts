@@ -36,6 +36,18 @@ export class SessionAlreadyOwnedError extends Error {
   }
 }
 
+/** `delete` reached a backend that keeps no artifact it can remove. */
+export class SessionPersistenceDeleteUnsupportedError extends Error {
+  /**
+   * @param sessionId - the session the backend cannot remove.
+   * @param backend - the backend class that refused.
+   */
+  constructor(readonly sessionId: SessionId, readonly backend: string) {
+    super(`session "${sessionId}" cannot be deleted: backend "${backend}" does not support deletion`)
+    this.name = 'SessionPersistenceDeleteUnsupportedError'
+  }
+}
+
 /** A mutation (`append`/`flush`) was called on a read handle. */
 export class SessionReadOnlyError extends Error {
   /**

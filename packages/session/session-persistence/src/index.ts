@@ -10,6 +10,7 @@ import { Context, Service } from '@deepseek-ai/cordis'
 import type { SessionEvent, SessionHeader, SessionId, SessionLogOffset } from '@deepseek-ai/dsh-session'
 import type { SessionHandle, SessionAccess } from './handle.ts'
 import type { SessionLocation } from './errors.ts'
+import { SessionPersistenceDeleteUnsupportedError } from './errors.ts'
 import type { SessionPersistenceRevision } from './revision.ts'
 
 // Re-export the metadata vocabulary so Consumers import it from the Service Definition.
@@ -30,6 +31,7 @@ export {
   SessionHandleClosedError,
   SessionOwnershipLostError,
   SessionPersistenceCorruptionError,
+  SessionPersistenceDeleteUnsupportedError,
   SessionPersistenceNotFoundError,
   SessionReadOnlyError,
   sessionFormatVersionRefusal,
@@ -106,6 +108,12 @@ export interface SessionPersistenceOpenOptions {
 /** Options for {@link SessionPersistence.stat}. */
 export interface SessionPersistenceStatOptions {
   /** Optional cancellation for backend metadata reads. */
+  readonly signal?: AbortSignal
+}
+
+/** Options for {@link SessionPersistence.delete}. */
+export interface SessionPersistenceDeleteOptions {
+  /** Optional cancellation observed before backend work starts. */
   readonly signal?: AbortSignal
 }
 
@@ -208,6 +216,29 @@ export abstract class SessionPersistence extends Service {
    * @returns one snapshot per stored session.
    */
   abstract list(options?: SessionPersistenceListOptions): Promise<readonly SessionPersistenceSnapshot[]>
+
+  /**
+   * Permanently remove one stored session's durable artifacts.
+   *
+   * Deletion is irreversible and unrecoverable: no tombstone, backup, or
+   * regeneration remains, and a later `open`/`stat`/`list` no longer observes
+   * the session. The backend must refuse while any write handle still owns the
+   * session — in this process or another — so a deleted log can never be
+   * resurrected by a late append.
+   *
+   * Backends that cannot delete refuse with
+   * `SessionPersistenceDeleteUnsupportedError`; the default implementation
+   * below is that refusal. A backend that supports deletion overrides it.
+   * @param id - the stored session to remove.
+   * @param options - optional cancellation.
+   * @throws {SessionPersistenceNotFoundError} when no such session is visible.
+   * @throws {SessionAlreadyOwnedError} while an active write handle owns it.
+   * @throws {SessionPersistenceDeleteUnsupportedError} when the backend keeps no removable artifact.
+   */
+  async delete(id: SessionId, options?: SessionPersistenceDeleteOptions): Promise<void> {
+    options?.signal?.throwIfAborted()
+    throw new SessionPersistenceDeleteUnsupportedError(id, this.constructor.name)
+  }
 }
 
 export default SessionPersistence

@@ -1,0 +1,7 @@
+# DSH-Go permanent Session deletion: mounts the UI-only bundle that adds the
+# delete entry below Archive in the Session row context menu, with its
+# confirmation dialog. The Host capability it calls (workspace.deleteSession)
+# is owned by the Workspace Controller, not by this row.
+- insert:
+    - id: go-session-delete
+      name: '@deepseek-ai/dsh-go-session-delete'

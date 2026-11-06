@@ -30,7 +30,6 @@ import { ClientRoster, type ClientRosterRow } from './roster.ts'
 export const WEB_PROFILE_BUNDLES: readonly string[] = [
   '@deepseek-ai/dsh-base',
   '@deepseek-ai/dsh-web-app',
-  '@deepseek-ai/dsh-go-session-delete',
 ]
 
 interface PackageManifest {

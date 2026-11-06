@@ -48,8 +48,10 @@ export const DEFAULT_PROFILE_BUNDLES: readonly string[] = ['@deepseek-ai/dsh-bas
  * The bundles the dsh installation ships for a person to switch on: each a
  * runtime dependency of the installation that declares `dsh.bundle.patch`,
  * an `icon`, and `./locale/*.json` display metadata, selected by no shipped
- * template, and offered switched off by the plugin manager except persistent
- * terminals, which have no page switch
+ * template except `@deepseek-ai/dsh-go-session-delete`, which the `web` template
+ * selects because the portable build ships Session deletion on, and offered
+ * switched off by the plugin manager except persistent terminals, which have no
+ * page switch
  * ([rationale](../../../../.agents/notes/implemented/process/2026-09-15-shipped-optional-bundles.md),
  * [admission](../../../../.agents/notes/implemented/architecture/2026-09-21-experimental-capabilities-as-optional-bundles.md)).
  */
@@ -69,6 +71,7 @@ export const OPTIONAL_BUNDLES: readonly string[] = [
   '@deepseek-ai/dsh-experimental-plugin-market-bundle',
   '@deepseek-ai/dsh-experimental-tool-worktree',
   '@deepseek-ai/dsh-experimental-forge-bundle',
+  '@deepseek-ai/dsh-go-session-delete',
 ]
 
 /** Public DSH release members available through the ordinary on-demand bundle installer. */

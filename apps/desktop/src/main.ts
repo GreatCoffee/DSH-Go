@@ -72,8 +72,8 @@ import { DesktopQuitConfirmation } from './quit-confirmation.ts'
 import { DesktopTray } from './tray.ts'
 import { DesktopBackgroundNotice } from './background-notice.ts'
 import {
-  applyPortableEnvironment, ensurePortableLayout, readPortableState, resolvePortableLayout, writePortableState,
-  type PortableLayout,
+  applyPortableEnvironment, ensurePortableLayout, portableDisabled, readPortableState, resolvePortableLayout,
+  writePortableState, type PortableLayout,
 } from './portable.ts'
 import { rebasePortableData, type PortableRebaseSummary } from './portable-rebase.ts'
 
@@ -89,7 +89,7 @@ let skipQuitConfirmation = false
  * Set for a packaged portable build: every mutable file then lives under
  * `<executable directory>\portable`, so the whole directory can be moved.
  */
-const portableLayout: PortableLayout | undefined = app.isPackaged
+const portableLayout: PortableLayout | undefined = app.isPackaged && !portableDisabled()
   ? resolvePortableLayout(app.getPath('exe'))
   : undefined
 /** Whether the shipped `portable` directory was absent, which is not a first launch. */
@@ -414,15 +414,13 @@ async function preparePortableRuntime(layout: PortableLayout): Promise<void> {
  * @param layout - the resolved portable layout.
  */
 async function notifyMissingPortableData(layout: PortableLayout): Promise<void> {
-  const chinese = app.getLocale().toLowerCase().startsWith('zh')
+  const { messages } = currentDesktopLocale()
   await dialog.showMessageBox({
     type: 'info',
-    title: 'DSH-Go',
-    message: chinese ? '没有找到便携数据目录，已按全新安装启动' : 'The portable data directory was missing, so this is a fresh start',
-    detail: chinese
-      ? `程序目录下的 portable\\ 文件夹不存在，已重新创建：\n${layout.portableDirectory}\n\n如果数据还在别处，请先退出，把整个 portable 文件夹放回程序目录后重新启动。`
-      : `The portable\\ folder beside the executable was missing and has been recreated at:\n${layout.portableDirectory}\n\nIf your data still exists elsewhere, quit, put the whole portable folder back beside the executable, and start again.`,
-    buttons: ['OK'],
+    title: messages.portableMissingTitle,
+    message: messages.portableMissingMessage,
+    detail: messages.portableMissingDetail.replace('{directory}', layout.portableDirectory),
+    buttons: [messages.portableMissingOk],
     noLink: true,
   })
 }

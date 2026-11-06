@@ -16,6 +16,11 @@ import { DesktopUpdatePreparationError } from '../src/update-error.ts'
 import { writeCrashReport } from '../src/crash-report.ts'
 import { runOperationReportJob } from '../src/operation-report-job.ts'
 
+// This suite drives the desktop entry point against an Electron double, where rebasing
+// Electron paths and the Host environment would leak into the running test process.
+// Portable startup has its own coverage in `portable.spec.ts`.
+process.env.DSH_PORTABLE = '0'
+
 type InvokeEvent = { sender?: unknown; senderFrame: { url: string } }
 type InvokeHandler = (event: InvokeEvent, ...args: unknown[]) => unknown
 
@@ -185,6 +190,8 @@ const harness = await vi.hoisted(async () => {
     getAppPath: (): string => 'desktop-test-app',
     setAppLogsPath: vi.fn(),
     getPath: vi.fn<(name: string) => string>(),
+    // A packaged build rebases Electron's mutable paths into the portable directory at startup.
+    setPath: vi.fn<(name: string, path: string) => void>(),
     setAboutPanelOptions: vi.fn<(options: Electron.AboutPanelOptionsOptions) => void>(),
     requestSingleInstanceLock: () => true,
     setAsDefaultProtocolClient: vi.fn(),

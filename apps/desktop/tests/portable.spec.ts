@@ -7,7 +7,8 @@ const setPath = vi.fn()
 vi.mock('electron', () => ({ app: { setPath: (name: string, value: string) => { setPath(name, value) } } }))
 
 const {
-  applyPortableEnvironment, ensurePortableLayout, isNetworkLocation, readPortableState, resolvePortableLayout,
+  applyPortableEnvironment, ensurePortableLayout, isNetworkLocation, portableDisabled, readPortableState,
+  resolvePortableLayout,
 } = await import('../src/portable.ts')
 
 const roots: string[] = []
@@ -81,4 +82,10 @@ it('widens the sandbox default only when the executable lives on a share', async
 
 it('recognizes UNC roots as network locations', () => {
   expect(isNetworkLocation('\\\\server\\share\\DSH-Go')).toBe(true)
+})
+
+it('honors an explicit opt-out of the packaged portable root', () => {
+  expect(portableDisabled({})).toBe(false)
+  expect(portableDisabled({ DSH_PORTABLE: '1' })).toBe(false)
+  for (const value of ['0', ' false ', 'OFF']) expect(portableDisabled({ DSH_PORTABLE: value })).toBe(true)
 })

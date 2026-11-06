@@ -71,6 +71,21 @@ export function resolvePortableLayout(exePath: string, networkLocation?: boolean
 }
 
 /**
+ * Whether the environment asks this launch to skip the portable layout.
+ *
+ * A packaged build normally owns `<executable directory>/portable`; `DSH_PORTABLE=0`
+ * exists for embedders and for tests that drive the desktop entry point against an
+ * Electron double, where rebasing `setPath` and the Host environment would leak into
+ * the surrounding process. DSH-Go itself never sets it.
+ * @param env - environment to read; defaults to the process environment.
+ * @returns true when portable mode is explicitly disabled.
+ */
+export function portableDisabled(env: NodeJS.ProcessEnv = process.env): boolean {
+  const value = env['DSH_PORTABLE']?.trim().toLowerCase()
+  return value === '0' || value === 'false' || value === 'off'
+}
+
+/**
  * Create the portable directory skeleton. Existing content is preserved.
  * @param layout - the resolved portable layout.
  * @returns whether the portable directory itself was absent, which means the

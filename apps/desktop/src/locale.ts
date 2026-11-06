@@ -188,6 +188,10 @@ export const en = {
   mandatoryCopyFailed: 'Could not copy the link. Select and copy it below.',
   mandatoryAddress: 'Download link',
   mandatoryNotification: 'Return to the application to confirm installation and restart.',
+  portableMissingTitle: 'DSH-Go Portable',
+  portableMissingMessage: 'The portable data folder was missing, so this is a fresh start.',
+  portableMissingDetail: 'The portable folder beside the executable did not exist and has been recreated at:\n{directory}\n\nIf your data still exists elsewhere, quit, put the whole portable folder back beside the executable, and start again.',
+  portableMissingOk: 'OK',
 } as const
 
 /** Every Desktop locale supplies the complete English key set. */
@@ -381,6 +385,10 @@ export const zh = {
   mandatoryCopyFailed: '复制失败，请手动选择并复制下方链接。',
   mandatoryAddress: '下载链接',
   mandatoryNotification: '返回应用确认安装并重启。',
+  portableMissingTitle: 'DSH-Go 便携版',
+  portableMissingMessage: '没有找到便携数据目录，已按全新安装启动。',
+  portableMissingDetail: '程序目录下的 portable 文件夹不存在，已重新创建：\n{directory}\n\n如果数据还在别处，请先退出，把整个 portable 文件夹放回程序目录后重新启动。',
+  portableMissingOk: '确定',
 } as const satisfies DesktopMessages
 
 /** Japanese copy, checked against the English keys. */
@@ -572,6 +580,10 @@ export const ja = {
   mandatoryCopyFailed: 'リンクをコピーできませんでした。以下から選択してコピーしてください。',
   mandatoryAddress: 'ダウンロードリンク',
   mandatoryNotification: 'アプリに戻り、インストールと再起動を確認してください。',
+  portableMissingTitle: 'DSH-Go ポータブル版',
+  portableMissingMessage: 'ポータブルデータフォルダが見つからないため、新規インストールとして起動しました。',
+  portableMissingDetail: '実行ファイルと同じ場所にある portable フォルダが存在しないため、次の場所に作成しました：\n{directory}\n\nデータが別の場所に残っている場合は、いったん終了し、portable フォルダを実行ファイルと同じ場所に戻してから起動し直してください。',
+  portableMissingOk: 'OK',
 } satisfies Record<keyof typeof en, string>
 
 /** Spanish dictionary, checked against the English keys. */
@@ -763,6 +775,10 @@ export const es = {
   mandatoryCopyFailed: 'No se pudo copiar el enlace. Selecciónelo y cópielo a continuación.',
   mandatoryAddress: 'Enlace de descarga',
   mandatoryNotification: 'Regrese a la aplicación para confirmar la instalación y reiniciar.',
+  portableMissingTitle: 'DSH-Go portátil',
+  portableMissingMessage: 'No se encontró la carpeta de datos portátil, así que se ha iniciado como instalación nueva.',
+  portableMissingDetail: 'La carpeta portable junto al ejecutable no existía y se ha vuelto a crear en:\n{directory}\n\nSi tus datos siguen en otro sitio, cierra la aplicación, vuelve a colocar la carpeta portable junto al ejecutable y ábrela de nuevo.',
+  portableMissingOk: 'Aceptar',
 } satisfies DesktopMessages
 
 /** French dictionary, checked against the English keys. */
@@ -954,6 +970,10 @@ export const fr = {
   mandatoryCopyFailed: 'Impossible de copier le lien. Sélectionnez-le et copiez-le ci-dessous.',
   mandatoryAddress: 'Lien de téléchargement',
   mandatoryNotification: "Revenez à l'application pour confirmer l'installation et redémarrer.",
+  portableMissingTitle: 'DSH-Go portable',
+  portableMissingMessage: 'Le dossier de données portable est introuvable ; l’application a démarré comme une nouvelle installation.',
+  portableMissingDetail: 'Le dossier portable à côté de l’exécutable n’existait pas et a été recréé ici :\n{directory}\n\nSi vos données se trouvent ailleurs, quittez, replacez le dossier portable à côté de l’exécutable, puis relancez.',
+  portableMissingOk: 'OK',
 } satisfies DesktopMessages
 
 /** German dictionary, checked against the English keys. */
@@ -1145,6 +1165,10 @@ export const de = {
   mandatoryCopyFailed: 'Der Link konnte nicht kopiert werden. Wählen Sie es aus und kopieren Sie es unten.',
   mandatoryAddress: 'Download-Link',
   mandatoryNotification: 'Kehren Sie zur Anwendung zurück, um die Installation zu bestätigen und neu zu starten.',
+  portableMissingTitle: 'DSH-Go portable',
+  portableMissingMessage: 'Le dossier de données portable est introuvable ; l’application a démarré comme une nouvelle installation.',
+  portableMissingDetail: 'Le dossier portable à côté de l’exécutable n’existait pas et a été recréé ici :\n{directory}\n\nSi vos données se trouvent ailleurs, quittez, replacez le dossier portable à côté de l’exécutable, puis relancez.',
+  portableMissingOk: 'OK',
 } satisfies DesktopMessages
 
 /** Russian dictionary, checked against the English keys. */
@@ -1336,6 +1360,10 @@ export const ru = {
   mandatoryCopyFailed: 'Не удалось скопировать ссылку. Выделите и скопируйте его ниже.',
   mandatoryAddress: 'Ссылка для скачивания',
   mandatoryNotification: 'Вернитесь в приложение, чтобы подтвердить установку и перезапустить.',
+  portableMissingTitle: 'DSH-Go Portable',
+  portableMissingMessage: 'Der portable Datenordner wurde nicht gefunden; die Anwendung startete als Neuinstallation.',
+  portableMissingDetail: 'Der Ordner portable neben der ausführbaren Datei fehlte und wurde hier neu angelegt:\n{directory}\n\nFalls Ihre Daten noch anderswo liegen, beenden Sie die Anwendung, legen Sie den Ordner portable wieder neben die ausführbare Datei und starten Sie erneut.',
+  portableMissingOk: 'OK',
 } satisfies DesktopMessages
 
 /** Portuguese dictionary, checked against the English keys. */
@@ -1527,6 +1555,10 @@ export const pt = {
   mandatoryCopyFailed: 'Não foi possível copiar o link. Selecione e copie abaixo.',
   mandatoryAddress: 'Link de download',
   mandatoryNotification: 'Retorne ao aplicativo para confirmar a instalação e reinicie.',
+  portableMissingTitle: 'DSH-Go Portable',
+  portableMissingMessage: 'Папка переносимых данных не найдена, поэтому приложение запустилось как новая установка.',
+  portableMissingDetail: 'Папка portable рядом с исполняемым файлом отсутствовала и была создана заново:\n{directory}\n\nЕсли ваши данные остались в другом месте, закройте приложение, верните папку portable рядом с исполняемым файлом и запустите его снова.',
+  portableMissingOk: 'ОК',
 } satisfies DesktopMessages
 
 const dictionaries = { en, zh, ja, es, fr, de, ru, pt }

@@ -1244,18 +1244,20 @@ describe('registry-global session deletion', () => {
     expect(result.remove).not.toHaveBeenCalled()
   })
 
-  it('refuses a session with running work instead of deleting under it', async () => {
+  it('stops running work instead of refusing, then deletes under a quiet session', async () => {
     const dir = await makeDir('delete-active')
     const result = await harness({ sessions: [header('busy', dir, 100)] })
+    const order: string[] = []
     result.ctx.on('workspace/session-activity', async () => [{ kind: 'probe' }])
+    result.ctx.on('workspace/session-stop', async ({ sessionId }) => { order.push(`stop:${sessionId}`) })
+    result.ctx.on('workspace/session-close', async ({ sessionId }) => { order.push(`close:${sessionId}`) })
+    result.remove.mockImplementation(async () => { order.push('persistence') })
 
-    await expect(result.registry.deleteSession(SessionId('busy'))).rejects.toMatchObject({
-      name: 'WorkspaceActiveSessionError',
-      sessionId: 'busy',
-      activity: [{ kind: 'probe' }],
-    })
-    expect(result.remove).not.toHaveBeenCalled()
-    expect(result.registry.list().find(entry => entry.sessionIds.includes(SessionId('busy')))).toBeDefined()
+    await result.registry.deleteSession(SessionId('busy'))
+
+    // A cancelled turn beats a reader appending to a log that no longer exists.
+    expect(order).toEqual(['stop:busy', 'close:busy', 'persistence'])
+    expect(result.registry.list().flatMap(entry => entry.sessionIds)).not.toContain('busy')
   })
 
   it('releases a live owner before deleting the log it still owns', async () => {

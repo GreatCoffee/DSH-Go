@@ -1,4 +1,4 @@
-import { mkdtemp, rm, writeFile } from 'node:fs/promises'
+import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, expect, it, vi } from 'vitest'
@@ -7,8 +7,8 @@ const setPath = vi.fn()
 vi.mock('electron', () => ({ app: { setPath: (name: string, value: string) => { setPath(name, value) } } }))
 
 const {
-  applyPortableEnvironment, ensurePortableLayout, isNetworkLocation, portableDisabled, readPortableState,
-  resolvePortableLayout,
+  applyPortableEnvironment, ensurePortableLayout, installPortableLogging, isNetworkLocation, portableDisabled,
+  readPortableState, resolvePortableLayout,
 } = await import('../src/portable.ts')
 
 const roots: string[] = []
@@ -39,6 +39,7 @@ it('derives every portable path from the executable directory', async () => {
   expect(layout.stateFile).toBe(join(root, 'portable', 'state.json'))
   expect(layout.configDirectory).toBe(join(root, 'portable', 'config'))
   expect(layout.stateDirectory).toBe(join(root, 'portable', 'state'))
+  expect(layout.logsDirectory).toBe(join(root, 'portable', 'logs'))
 })
 
 it('creates the directory skeleton idempotently', async () => {
@@ -88,4 +89,29 @@ it('honors an explicit opt-out of the packaged portable root', () => {
   expect(portableDisabled({})).toBe(false)
   expect(portableDisabled({ DSH_PORTABLE: '1' })).toBe(false)
   for (const value of ['0', ' false ', 'OFF']) expect(portableDisabled({ DSH_PORTABLE: value })).toBe(true)
+})
+
+it('mirrors console output into a dated host log and restores the stream', async () => {
+  const root = await directory()
+  const layout = resolvePortableLayout(join(root, 'DSH-Go.exe'), false)
+  ensurePortableLayout(layout)
+  const written: string[] = []
+  const target = {
+    write: (chunk: unknown) => { written.push(String(chunk)); return true },
+  } as unknown as NodeJS.WriteStream
+
+  const dispose = installPortableLogging(layout, [target])
+  target.write('workspace: releasing session \u001B[33mheld\u001B[0m failed\n')
+  dispose()
+  target.write('after dispose\n')
+
+  const file = join(layout.logsDirectory, `host-${new Date().toISOString().slice(0, 10)}.log`)
+  await vi.waitFor(async () => {
+    expect(await readFile(file, 'utf8')).toContain('releasing session held failed')
+  })
+  // The console keeps every chunk, and a disposed mirror adds nothing more.
+  expect(written).toEqual([
+    'workspace: releasing session \u001B[33mheld\u001B[0m failed\n',
+    'after dispose\n',
+  ])
 })

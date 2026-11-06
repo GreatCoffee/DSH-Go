@@ -1,7 +1,7 @@
 /** Portable runtime layout: one directory beside the executable owns every mutable file. */
 
 import { execFileSync } from 'node:child_process'
-import { existsSync, mkdirSync, readFileSync } from 'node:fs'
+import { createWriteStream, existsSync, mkdirSync, readdirSync, readFileSync, unlinkSync, type WriteStream } from 'node:fs'
 import { mkdir, writeFile } from 'node:fs/promises'
 import { dirname, join, parse } from 'node:path'
 import { app } from 'electron'
@@ -29,6 +29,8 @@ export interface PortableLayout {
   readonly configDirectory: string
   /** `XDG_STATE_HOME`, so XDG-aware tools keep their state and logs beside the executable. */
   readonly stateDirectory: string
+  /** Host console captures; a portable install has no other place to leave a trace of a warning. */
+  readonly logsDirectory: string
   /** Scratch directory handed to Electron as `temp`. */
   readonly scratchDirectory: string
   /** `portable/state.json`, recording the last launch root. */
@@ -64,6 +66,7 @@ export function resolvePortableLayout(exePath: string, networkLocation?: boolean
     cacheDirectory: join(portableDirectory, 'cache'),
     configDirectory: join(portableDirectory, 'config'),
     stateDirectory: join(portableDirectory, 'state'),
+    logsDirectory: join(portableDirectory, 'logs'),
     scratchDirectory: join(portableDirectory, 'temp'),
     stateFile: join(portableDirectory, 'state.json'),
     networkLocation: networkLocation ?? isNetworkLocation(root),
@@ -95,7 +98,8 @@ export function ensurePortableLayout(layout: PortableLayout): boolean {
   const wasAbsent = !existsSync(layout.portableDirectory)
   for (const directory of [
     layout.portableDirectory, layout.dshHome, layout.userData, layout.workspaceDirectory,
-    layout.cacheDirectory, layout.configDirectory, layout.stateDirectory, layout.scratchDirectory,
+    layout.cacheDirectory, layout.configDirectory, layout.stateDirectory, layout.logsDirectory,
+    layout.scratchDirectory,
   ]) mkdirSync(directory, { recursive: true })
   return wasAbsent
 }
@@ -120,6 +124,82 @@ export function readPortableState(layout: PortableLayout): PortableState | undef
   } catch (_error: unknown) {
     // A partially written state file records no usable previous root; the rebase then has no baseline.
     return undefined
+  }
+}
+
+/**
+ * Host console captures kept beside the executable; older files are pruned at launch.
+ */
+export const PORTABLE_LOG_FILES_KEPT = 7
+
+const ANSI_ESCAPE = /\u001B\[[0-9;]*[A-Za-z]/g
+
+/**
+ * Mirror the Host console into `<portable>/logs/host-<date>.log`.
+ *
+ * A packaged installation has no terminal anyone can scroll back through, so a
+ * warning that matters after the fact — a failed cache eviction, a refused
+ * deletion, a rebase that could not rewrite a file — would otherwise be lost.
+ * The mirror is best effort: an unwritable log directory never breaks startup,
+ * and the console keeps receiving everything the file does.
+ * @param layout - the resolved portable layout.
+ * @param streams - console streams to mirror; defaults to stdout and stderr.
+ * @returns a disposer that restores both streams and closes the file.
+ */
+export function installPortableLogging(
+  layout: PortableLayout,
+  streams: readonly NodeJS.WriteStream[] = [process.stdout, process.stderr],
+): () => void {
+  mkdirSync(layout.logsDirectory, { recursive: true })
+  prunePortableLogs(layout.logsDirectory)
+  let stream: WriteStream | undefined
+  let day = ''
+  const sink = (): WriteStream | undefined => {
+    const today = new Date().toISOString().slice(0, 10)
+    if (day !== today) {
+      stream?.end()
+      const opened = createWriteStream(join(layout.logsDirectory, `host-${today}.log`), { flags: 'a' })
+      opened.on('error', () => { if (stream === opened) stream = undefined })
+      stream = opened
+      day = today
+    }
+    return stream
+  }
+  const restores = streams.map((target) => {
+    const original = target.write.bind(target)
+    target.write = ((chunk: unknown, encoding?: unknown, callback?: unknown): boolean => {
+      const file = sink()
+      if (file !== undefined) {
+        const text = typeof chunk === 'string'
+          ? chunk
+          : chunk instanceof Uint8Array ? Buffer.from(chunk).toString('utf8') : String(chunk)
+        file.write(text.replace(ANSI_ESCAPE, ''))
+      }
+      return (original as (value: unknown, first?: unknown, second?: unknown) => boolean)(chunk, encoding, callback)
+    }) as typeof target.write
+    return () => { target.write = original as typeof target.write }
+  })
+  return () => {
+    for (const restore of restores) restore()
+    stream?.end()
+    stream = undefined
+  }
+}
+
+/**
+ * Drop the oldest console captures beyond {@link PORTABLE_LOG_FILES_KEPT}.
+ * @param directory - the portable log directory.
+ */
+function prunePortableLogs(directory: string): void {
+  try {
+    const files = readdirSync(directory)
+      .filter(name => name.startsWith('host-') && name.endsWith('.log'))
+      .sort()
+    for (const name of files.slice(0, Math.max(0, files.length - PORTABLE_LOG_FILES_KEPT))) {
+      try { unlinkSync(join(directory, name)) } catch (_error: unknown) { /* A locked capture stays until the next launch. */ }
+    }
+  } catch (_error: unknown) {
+    // An unreadable directory just means no pruning this launch.
   }
 }
 

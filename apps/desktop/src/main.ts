@@ -72,8 +72,8 @@ import { DesktopQuitConfirmation } from './quit-confirmation.ts'
 import { DesktopTray } from './tray.ts'
 import { DesktopBackgroundNotice } from './background-notice.ts'
 import {
-  applyPortableEnvironment, ensurePortableLayout, portableDisabled, readPortableState, resolvePortableLayout,
-  writePortableState, type PortableLayout,
+  applyPortableEnvironment, ensurePortableLayout, installPortableLogging, portableDisabled, readPortableState,
+  resolvePortableLayout, writePortableState, type PortableLayout,
 } from './portable.ts'
 import { rebasePortableData, type PortableRebaseSummary } from './portable-rebase.ts'
 
@@ -94,9 +94,14 @@ const portableLayout: PortableLayout | undefined = app.isPackaged && !portableDi
   : undefined
 /** Whether the shipped `portable` directory was absent, which is not a first launch. */
 let portableDataWasMissing = false
+/** Restores the console streams and closes `portable/logs/host-<date>.log` at exit. */
+let portableLogging: (() => void) | undefined
 if (portableLayout !== undefined) {
   portableDataWasMissing = ensurePortableLayout(portableLayout)
   applyPortableEnvironment(portableLayout)
+  portableLogging = installPortableLogging(portableLayout)
+  // Console captures close on the way out; a dangling append stream would otherwise lose its tail.
+  app.on('will-quit', () => { portableLogging?.(); portableLogging = undefined })
 }
 let windowsLanguage: string | undefined = readDesktopLocaleCache(app.getPath('userData'))
 /**

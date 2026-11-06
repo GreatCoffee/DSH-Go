@@ -33,22 +33,24 @@ if (Test-Path $a) {
 }
 Write-Host "installed commit: $localCommit"
 
-# Resolve the newest tag from the `releases/latest` redirect instead of the REST
-# API: anonymous API calls are rate limited per IP, the redirect is not.
+# Resolve the newest tag by following `releases/latest` to its tag page. The REST
+# API is rate limited per anonymous IP, and Windows PowerShell 5.1 and 7 expose the
+# redirect target through different properties, so read whichever exists.
 $tag = $null
 try {
-  $probe = Invoke-WebRequest -Uri "https://github.com/$repository/releases/latest" -MaximumRedirection 0 -UseBasicParsing -ErrorAction Stop
-  Write-Host 'No release has been published for this repository yet.' -ForegroundColor Yellow
-  return
+  $response = Invoke-WebRequest -Uri "https://github.com/$repository/releases/latest" -UseBasicParsing -ErrorAction Stop
 } catch {
-  $response = $_.Exception.Response
-  if (-not $response) { throw }
-  $location = $response.Headers['Location']
-  if ($location) {
-    $tag = @($location)[0].TrimEnd('/').Split('/')[-1]
-  }
+  Write-Host "Cannot reach GitHub releases: $($_.Exception.Message)" -ForegroundColor Red
+  exit 1
 }
-if (-not $tag) {
+$final = $null
+if ($response.BaseResponse.RequestMessage) {
+  $final = $response.BaseResponse.RequestMessage.RequestUri.AbsoluteUri
+} elseif ($response.BaseResponse.ResponseUri) {
+  $final = $response.BaseResponse.ResponseUri.AbsoluteUri
+}
+if ($final -and $final -match '/releases/tag/([^/?#]+)') { $tag = $Matches[1] }
+if (-not $tag -or -not $tag.StartsWith('go-')) {
   Write-Host 'No release has been published for this repository yet.' -ForegroundColor Yellow
   return
 }

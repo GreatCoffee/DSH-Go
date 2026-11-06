@@ -1212,7 +1212,7 @@ describe('registry-global session deletion', () => {
   it('deletes the durable log first, then every registry trace of the session', async () => {
     const dir = await makeDir('delete-home')
     const result = await harness({ sessions: [header('kept', dir, 100), header('gone', dir, 200)] })
-    const workspace = result.registry.list().find(entry => entry.sessionIds.includes('gone'))!
+    const workspace = result.registry.list().find(entry => entry.sessionIds.includes(SessionId('gone')))!
     await result.registry.archiveSession(SessionId('kept'))
     await result.registry.pinSession(SessionId('gone'))
 
@@ -1255,7 +1255,7 @@ describe('registry-global session deletion', () => {
       activity: [{ kind: 'probe' }],
     })
     expect(result.remove).not.toHaveBeenCalled()
-    expect(result.registry.list().find(entry => entry.sessionIds.includes('busy'))).toBeDefined()
+    expect(result.registry.list().find(entry => entry.sessionIds.includes(SessionId('busy')))).toBeDefined()
   })
 })
 

@@ -317,6 +317,13 @@ export const SERVICE_API: readonly ServiceApiEntry[] = [
         returns: 'the handle after setup, rollback-covered publication, and loop start complete.',
       },
       {
+        signature: 'async close(id: SessionId): Promise<boolean>',
+        description: 'Release one live Agent by tearing down exactly the lifetime the registry published: stop the loop, drain and close its write path, unregister the Agent, remove the Session from the store, and unwind the scope. The owning fiber\'s capability is consumed, so a later unload of that fiber finds nothing left to do. Callers deleting a Session\'s durable log must await this first — the persistence backend refuses an owned write handle.',
+        parameters: [{ name: 'id', description: 'the shared agent/session id to release.' }],
+        returns: '`true` when a live entry was disposed, `false` when none is live.',
+        throws: ['the factory\'s aggregated teardown failure after cleanup ran.'],
+      },
+      {
         signature: 'register(agent: Agent): ReturnType<Context[\'effect\']>',
         description: 'Register a live agent with source `startup`. Rejects if the id is already registered or a serial `agent/created` listener fails. Emits `agent/disposed` when the calling fiber is disposed — both with the agent\'s scope carrier (`scopeTarget(agent, agent)`): the subject is the agent in hand, so the emits are scope-filtered regardless of which context invoked `register` (calling through `agent.ctx` scopes EFFECTS; dispatch scoping always requires passing the carrier). Await registration before using the agent.',
         parameters: [{ name: 'agent', description: 'the already-constructed agent to record in the store.' }],
@@ -2925,7 +2932,7 @@ export const SERVICE_API: readonly ServiceApiEntry[] = [
       },
       {
         signature: 'async delete(id: SessionId, options?: SessionPersistenceDeleteOptions): Promise<void>',
-        description: 'Permanently remove one stored session\'s durable artifacts.\n\nDeletion is irreversible and unrecoverable: no tombstone, backup, or regeneration remains, and a later `open`/`stat`/`list` no longer observes the session. The backend must refuse while any write handle still owns the session — in this process or another — so a deleted log can never be resurrected by a late append.\n\nBackends that cannot delete refuse with `SessionPersistenceDeleteUnsupportedError`; the default implementation below is that refusal. A backend that supports deletion overrides it.',
+        description: 'Permanently remove one stored session\'s durable artifacts.\n\nDeletion is irreversible and unrecoverable: no tombstone, backup, or regeneration remains, and a later `open`/`stat`/`list` no longer observes the session. The backend must refuse while any write handle still owns the session — in this process or another — so a deleted log can never be resurrected by a late append.\n\nBackends that cannot delete refuse with `SessionPersistenceDeleteUnsupportedError`; the default implementation below is that refusal. A backend that supports deletion overrides it and emits `session/deleted` once the artifacts are gone, so derived state (projection checkpoints, caches) drops its record for that id instead of serving a later lifecycle that reuses the slot.',
         parameters: [{ name: 'id', description: 'the stored session to remove.' }, { name: 'options', description: 'optional cancellation.' }],
         throws: ['{SessionPersistenceNotFoundError} when no such session is visible.', '{SessionAlreadyOwnedError} while an active write handle owns it.', '{SessionPersistenceDeleteUnsupportedError} when the backend keeps no removable artifact.'],
       },
@@ -4664,7 +4671,7 @@ export const SERVICE_API: readonly ServiceApiEntry[] = [
       },
       {
         signature: 'deleteSession(sessionId: SessionId): Promise<void>',
-        description: 'Permanently remove one Session: its durable log through `sessionPersistence` and every registry trace of it — workspace accounting, the archive and pin sets, and the canonical-cwd header index.\n\nRemoval is irreversible, so a Session whose work is still running is refused with WorkspaceActiveSessionError — archiving stops work, deleting does not, and the reader that owns the live Session would otherwise keep appending to a log that no longer exists. The durable log goes first because it is the fact the rest derives from: a failure there leaves the registry intact and the Session readable. Once the log is gone, the id is dropped from every workspace record and from the archive and pin sets in the same queued operation, and its header index entries are cleared, so no grouping surface, `sessionKnown` check, or later `resolveByPath` resurrects it. Deletion never touches the workspace directory or any other Session.',
+        description: 'Permanently remove one Session: its durable log through `sessionPersistence` and every registry trace of it — workspace accounting, the archive and pin sets, and the canonical-cwd header index.\n\nRemoval is irreversible, so a Session whose work is still running is refused with WorkspaceActiveSessionError — archiving stops work, deleting does not, and the reader that owns the live Session would otherwise keep appending to a log that no longer exists. An idle but open Session is released first through `workspace/session-close`, so a conversation the user left open deletes without an application restart. The durable log goes first because it is the fact the rest derives from: a failure there leaves the registry intact and the Session readable. Once the log is gone, the id is dropped from every workspace record and from the archive and pin sets in the same queued operation, and its header index entries are cleared, so no grouping surface, `sessionKnown` check, or later `resolveByPath` resurrects it. Deletion never touches the workspace directory or any other Session.',
         parameters: [{ name: 'sessionId', description: 'the Session to remove.' }],
         returns: 'resolution after the log and every registry trace are gone.',
         throws: ['{WorkspaceUnknownSessionError} when neither live state nor storage knows the Session.', '{WorkspaceActiveSessionError} while the Session has running work.'],
@@ -5227,6 +5234,14 @@ export const EVENT_API: readonly EventApiEntry[] = [
     parameters: [{ name: 'session', description: 'the session just entered and announced.' }],
   },
   {
+    name: 'session/deleted',
+    mode: 'emit',
+    signature: '\'session/deleted\'(sessionId: SessionId): void',
+    summary: 'Emitted after a persistence backend permanently removed one session\'s durable log.',
+    description: 'Emitted after a persistence backend permanently removed one session\'s durable log. Unlike \'session/disposed\' (the live-to-cold moment, where the log still exists and may be reopened), this edge is irreversible: derived state keyed by the id — projection checkpoints, caches — must drop its record instead of serving it to a later lifecycle. Emitted by the backend that performed the deletion, after the data is gone; listener failures are logged and contained.',
+    parameters: [{ name: 'sessionId', description: 'the session whose durable log no longer exists.' }],
+  },
+  {
     name: 'session/disposed',
     mode: 'emit',
     signature: '\'session/disposed\'(this: Scoped<Session>, session: Session): void',
@@ -5441,6 +5456,14 @@ export const EVENT_API: readonly EventApiEntry[] = [
     summary: 'Ask the composed providers what still runs for a session before it is archived.',
     description: 'Ask the composed providers what still runs for a session before it is archived. A listener prepends its own SessionActivity entries to the result of `next()`; the registry\'s innermost callback returns an empty list, so a composition without providers archives freely. Any non-empty result refuses the archive without a write.',
     parameters: [{ name: 'request', description: 'the session about to be archived.' }, { name: 'next', description: 'delegate to the remaining providers.' }],
+  },
+  {
+    name: 'workspace/session-close',
+    mode: 'parallel',
+    signature: '\'workspace/session-close\'(request: SessionActivityRequest): Promise<void> | void',
+    summary: 'Release a Session\'s live in-process owner because the caller is about to delete it permanently.',
+    description: 'Release a Session\'s live in-process owner because the caller is about to delete it permanently. Deletion removes the durable log, so every holder of an open write handle must close it first: the persistence backend refuses to delete a log an active writer owns, and a live Session left behind would keep publishing a row whose log is gone. Providers release their own family — an Agent registry disposes the Agent (draining and closing the write path), for example — and must return only after the handle is closed. A provider that still holds the Session makes the deletion fail with the backend\'s ownership error rather than deleting underneath it.',
+    parameters: [{ name: 'request', description: 'the session about to be deleted.' }],
   },
   {
     name: 'workspace/session-stop',

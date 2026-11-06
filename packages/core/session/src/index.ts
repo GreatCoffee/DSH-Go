@@ -64,6 +64,18 @@ declare module '@deepseek-ai/cordis' {
      */
     'session/disposed'(this: Scoped<Session>, session: Session): void
     /**
+     * Emitted after a persistence backend permanently removed one session's
+     * durable log. Unlike {@link 'session/disposed'} (the live-to-cold moment,
+     * where the log still exists and may be reopened), this edge is
+     * irreversible: derived state keyed by the id — projection checkpoints,
+     * caches — must drop its record instead of serving it to a later
+     * lifecycle. Emitted by the backend that performed the deletion, after
+     * the data is gone; listener failures are logged and contained.
+     * @param sessionId - the session whose durable log no longer exists.
+     * @mode emit
+     */
+    'session/deleted'(sessionId: SessionId): void
+    /**
      * Post-commit, fire-and-forget append feed. The listener snapshot resolves
      * before the log push, but callbacks run after it; observer failures are
      * logged and contained without making the committed append fail.

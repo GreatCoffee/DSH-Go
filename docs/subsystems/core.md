@@ -779,6 +779,19 @@ async create(options: CreateAgentOptions): Promise<AgentHandle>
 async resume(options: ResumeAgentOptions): Promise<AgentHandle>
 
 /**
+ * Release one live Agent by tearing down exactly the lifetime the registry
+ * published: stop the loop, drain and close its write path, unregister the
+ * Agent, remove the Session from the store, and unwind the scope. The
+ * owning fiber's capability is consumed, so a later unload of that fiber
+ * finds nothing left to do. Callers deleting a Session's durable log must
+ * await this first — the persistence backend refuses an owned write handle.
+ * @param id - the shared agent/session id to release.
+ * @returns `true` when a live entry was disposed, `false` when none is live.
+ * @throws the factory's aggregated teardown failure after cleanup ran.
+ */
+async close(id: SessionId): Promise<boolean>
+
+/**
  * Register a live agent with source `startup`. Rejects if the id is already registered or a
  * serial `agent/created` listener fails. Emits `agent/disposed`
  * when the calling fiber is disposed — both with the agent's scope carrier

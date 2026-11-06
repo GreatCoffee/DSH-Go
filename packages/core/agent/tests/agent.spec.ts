@@ -1,6 +1,6 @@
 import { unsupportedModel } from '@deepseek-ai/dsh-agent-loop-testkit'
 import SessionProjectionRegistry from '@deepseek-ai/dsh-session-projection'
-import { describe, expect, expectTypeOf, it, onTestFinished } from 'vitest'
+import { describe, expect, expectTypeOf, it, onTestFinished, vi } from 'vitest'
 import { Context, Service, symbols } from '@deepseek-ai/cordis'
 import { Session, SessionId } from '@deepseek-ai/dsh-session'
 import AgentRegistry, { agentEvents } from '@deepseek-ai/dsh-agent'
@@ -318,6 +318,41 @@ describe('AgentRegistry factory seam', () => {
     }
     return { factory, calls }
   }
+
+  it('adopts the factory teardown so a live agent can be released on request', async () => {
+    const ctx = new Context()
+    await ctx.plugin(SessionProjectionRegistry)
+    await ctx.plugin(AgentRegistry)
+    let disposed = 0
+    ctx.agents.setFactory({
+      async createAgent(ownerCtx, options) {
+        const agent = stubAgent(options.sessionId)
+        // Publish through the registry exactly like the real factory does, so
+        // the adopted capability lands on a live entry.
+        ownerCtx.agents.enter(agent)
+        await ownerCtx.agents.announce(agent, 'startup')
+        return {
+          agent,
+          dispose: async () => { disposed += 1 },
+        }
+      },
+      async resume(_ownerCtx, options) {
+        return {
+          agent: stubAgent(options.resumeSessionId),
+          dispose: async () => { disposed += 1 },
+        }
+      },
+    })
+
+    await ctx.agents.create({ sessionId: SessionId('idle') })
+    expect(await ctx.agents.close(SessionId('absent'))).toBe(false)
+    expect(await ctx.agents.close(SessionId('idle'))).toBe(true)
+    expect(disposed).toBe(1)
+
+    const close = vi.spyOn(ctx.agents, 'close')
+    await ctx.parallel('workspace/session-close', { sessionId: SessionId('idle') })
+    expect(close).toHaveBeenCalledWith('idle')
+  })
 
   it('requires a factory and delegates through the calling context', async () => {
     const ctx = new Context()

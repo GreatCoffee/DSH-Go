@@ -1257,6 +1257,29 @@ describe('registry-global session deletion', () => {
     expect(result.remove).not.toHaveBeenCalled()
     expect(result.registry.list().find(entry => entry.sessionIds.includes(SessionId('busy')))).toBeDefined()
   })
+
+  it('releases a live owner before deleting the log it still owns', async () => {
+    const dir = await makeDir('delete-release')
+    const result = await harness({ sessions: [header('open', dir, 100)] })
+    const order: string[] = []
+    result.ctx.on('workspace/session-close', async ({ sessionId }) => { order.push(`close:${sessionId}`) })
+    result.remove.mockImplementation(async () => { order.push('persistence') })
+
+    await result.registry.deleteSession(SessionId('open'))
+
+    expect(order).toEqual(['close:open', 'persistence'])
+    expect(result.registry.list().flatMap(entry => entry.sessionIds)).not.toContain('open')
+  })
+
+  it('logs a failing release and lets the backend report the ownership it could not clear', async () => {
+    const dir = await makeDir('delete-release-failure')
+    const result = await harness({ sessions: [header('held', dir, 100)] })
+    result.ctx.on('workspace/session-close', () => { throw new Error('release exploded') })
+    result.remove.mockRejectedValue(new Error('session "held" is already owned by an active write handle'))
+
+    await expect(result.registry.deleteSession(SessionId('held'))).rejects.toThrow(/active write handle/)
+    expect(result.registry.list().flatMap(entry => entry.sessionIds)).toContain('held')
+  })
 })
 
 describe('registry-global session unarchive', () => {

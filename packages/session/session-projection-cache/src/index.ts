@@ -349,6 +349,13 @@ export class SessionProjectionCache extends Service {
       this.dirty.delete(session)
     })
 
+    // The irreversible edge: the durable log is gone, so the checkpoint this
+    // cache folded from it can never validate against a stored header again.
+    // Dropping the record keeps a reused session id from inheriting it.
+    this.ctx.on('session/deleted', (sessionId: SessionId) => {
+      void this.forget(sessionId)
+    })
+
     // With the plugin (their sessions outlive the cache): clear pending
     // timers and stop accepting new work. The domain-close effect registered
     // in init runs after this disposer and drains already-queued writes, so
@@ -383,6 +390,23 @@ export class SessionProjectionCache extends Service {
     if (state.timer !== undefined) {
       clearTimeout(state.timer)
       state.timer = undefined
+    }
+  }
+
+  /**
+   * Drop one session's stored checkpoint after its durable log is gone.
+   *
+   * Fail-soft on purpose: the deletion already succeeded, so a failed
+   * eviction leaves an unreachable record instead of resurrecting an error
+   * the caller cannot act on. No timer bookkeeping is touched — disposal
+   * cleared that path before the log could be removed.
+   * @param id - the session whose durable log was permanently removed.
+   */
+  private async forget(id: SessionId): Promise<void> {
+    try {
+      await this.requireTable().delete(id)
+    } catch (error) {
+      this.ctx.logger.warn(`session projection cache: evicting "${id}" after deletion failed (record stays unreachable): ${String(error)}`)
     }
   }
 

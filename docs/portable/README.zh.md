@@ -53,7 +53,7 @@ DSH-Go 在会话行的 `⋯` 菜单里多了一行**删除会话**，位于**归
 
 这一行由安装包内置的 bundle `@deepseek-ai/dsh-go-session-delete` 提供，`web` 档案模板默认启用。它在插件管理器里作为「随安装包提供」的可选 bundle 列出，可以在主列表直接关掉再打开；关掉之后菜单行消失，已保存的会话不受影响。随程序分发的 bundle 不支持「卸载」（DSH 对所有内置 bundle 都是这个规则——真正的卸载要改程序文件），要停用就关掉它。它没有键盘快捷键。
 
-宿主能力（`workspace.deleteSession` 与 `SessionPersistence.delete`）属于核心，因此这个 bundle 只提供界面，删不删得掉由宿主判定。
+宿主能力（`workspace.deleteSession` 与 `SessionPersistence.delete`）属于核心，因此这个 bundle 只提供界面，删不删得掉由宿主判定。删除前宿主会先发 `workspace/session-close` 释放该会话仍活着的进程内持有者（Agent 注册表关闭它的日志写句柄），所以刚聊过、还开着的会话也能直接删掉，不需要重启；释放失败时由持久化后端报出它无法清除的占用。删除完成后后端发出 `session/deleted`，投影缓存据此丢弃该会话的检查点记录，不会在之后复用同一 id 时读到旧数据。
 
 ## 凭据
 

@@ -536,7 +536,10 @@ delete(id: WorkspaceId): Promise<boolean>
  * Removal is irreversible, so a Session whose work is still running is
  * refused with {@link WorkspaceActiveSessionError} — archiving stops work,
  * deleting does not, and the reader that owns the live Session would
- * otherwise keep appending to a log that no longer exists. The durable log
+ * otherwise keep appending to a log that no longer exists. An idle but open
+ * Session is released first through `workspace/session-close`, so a
+ * conversation the user left open deletes without an application restart.
+ * The durable log
  * goes first because it is the fact the rest derives from: a failure there
  * leaves the registry intact and the Session readable. Once the log is gone,
  * the id is dropped from every workspace record and from the archive and pin
@@ -646,6 +649,32 @@ Ask the composed providers what still runs for a session before it is archived. 
  * @mode waterfall
  */
 'workspace/session-activity'( request: SessionActivityRequest, next: () => Promise<readonly SessionActivity[]>, ): Promise<readonly SessionActivity[]>
+```
+
+Source: [`packages/workspace/workspace/src/index.ts`](../../packages/workspace/workspace/src/index.ts)
+
+<a id="workspacesession-close--parallel"></a>
+
+#### `workspace/session-close` — parallel
+
+Release a Session's live in-process owner because the caller is about to delete it permanently. Deletion removes the durable log, so every holder of an open write handle must close it first: the persistence backend refuses to delete a log an active writer owns, and a live Session left behind would keep publishing a row whose log is gone. Providers release their own family — an Agent registry disposes the Agent (draining and closing the write path), for example — and must return only after the handle is closed. A provider that still holds the Session makes the deletion fail with the backend's ownership error rather than deleting underneath it.
+
+```ts cordis-catalog
+/**
+ * Release a Session's live in-process owner because the caller is about
+ * to delete it permanently. Deletion removes the durable log, so every
+ * holder of an open write handle must close it first: the persistence
+ * backend refuses to delete a log an active writer owns, and a live
+ * Session left behind would keep publishing a row whose log is gone.
+ * Providers release their own family — an Agent registry disposes the
+ * Agent (draining and closing the write path), for example — and must
+ * return only after the handle is closed. A provider that still holds the
+ * Session makes the deletion fail with the backend's ownership error
+ * rather than deleting underneath it.
+ * @param request - the session about to be deleted.
+ * @mode parallel
+ */
+'workspace/session-close'(request: SessionActivityRequest): Promise<void> | void
 ```
 
 Source: [`packages/workspace/workspace/src/index.ts`](../../packages/workspace/workspace/src/index.ts)

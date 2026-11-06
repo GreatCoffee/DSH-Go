@@ -135,7 +135,7 @@ pwsh scripts/build-portable.ps1          # 在短路径副本里
 |---|---|
 | 插件兼容性实测 | 已完成（dsh-ops 0.4.4 因 `engines.dsh <0.2.2-0` 被拒，0.5.0 适配 0.2.2-rc.1） |
 | 插件状态目录随包移动 | 已完成（XDG 三变量，发布 `go-1869e914bd`） |
-| 删除会话（自带 bundle `@deepseek-ai/dsh-go-session-delete`） | 已实现并本地通过测试；在插件管理器里作为「随安装包提供」的可选 bundle 可见、可关闭（内置 bundle 不支持卸载）；尚未打包发布 |
+| 删除会话（自带 bundle `@deepseek-ai/dsh-go-session-delete`） | 已实现并本地通过测试；在插件管理器里作为「随安装包提供」的可选 bundle 可见、可关闭（内置 bundle 不支持卸载）；删除前经 `workspace/session-close` 释放活会话、删后发 `session/deleted` 清投影缓存，刚聊过的会话无需重启即可删；尚未打包发布 |
 | 升级后插件保留 | 已完成（真实发布包演练） |
 | macOS 便携 | 挂起（需 Mac 构建） |
 | Linux 便携 | 挂起（Desktop 非官方发布目标，可行路径是 CLI/Web 便携包） |

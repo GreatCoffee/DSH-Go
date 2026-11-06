@@ -551,6 +551,10 @@ class JsonlSessionPersistence extends SessionPersistence {
     options?.signal?.throwIfAborted()
     await rm(dir, { recursive: true, force: true })
     this.tracker.forget(id)
+    // Irreversible edge: derived state keyed by this id (projection
+    // checkpoints, caches) must drop its record rather than serve a later
+    // lifecycle that reuses the slot.
+    this.ctx.emit('session/deleted', id)
   }
 
   /**

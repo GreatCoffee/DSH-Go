@@ -283,6 +283,25 @@ describe('SessionProjectionCache write policy', () => {
     expect((await storedRows(root, id))?.['cache-test/marks']?.val).toEqual({ marks: ['live'] })
   })
 
+  it('evicts the stored checkpoint when the durable log is deleted', async () => {
+    const { ctx, root } = await harness()
+    const id = SessionId('deleted-log')
+    const created = whenWritten(ctx, id)
+    const { session, owner } = await ownedSession(ctx, id)
+    await created
+    mark(session, ['live'])
+    const written = whenWritten(ctx, id)
+    await owner.dispose()
+    await written
+    expect((await storedRows(root, id))?.['cache-test/marks']?.val).toEqual({ marks: ['live'] })
+
+    // Deletion is the irreversible edge: a checkpoint folded from a log that
+    // no longer exists would otherwise answer a later lifecycle reusing the id.
+    ctx.emit('session/deleted', id)
+
+    await vi.waitFor(async () => expect(await storedRows(root, id)).toBeUndefined())
+  })
+
   it('writes the last state of a unit released before the detach write', async () => {
     const { ctx, root } = await harness()
     const unitOwner = await releasableSecondaryUnit(ctx)

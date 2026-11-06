@@ -125,6 +125,8 @@ await handle.agent.whenIdle()
 
 注册表还为它发布的每个 Agent 回答 Workspace 注册表的归档准入（[接缝](../../workspace/workspace/README.zh.md)）：`workspace/session-activity` 在会话的 Agent 运行时报告 `turn` 族（等待审批或回答的回合也算），`workspace/session-stop` 以用户自己的停止方式取消该回合——`agent.cancel({ kind: 'user' })`，但不带停止按钮的 `keepInbox`，因此排队输入被丢弃并记录一次收件箱拼接，而不会在之后唤醒已归档会话。任何一步都不等待收敛；没有活 Agent 的会话没有可运行的回合。`turn` 键从 [`src/types.ts`](src/types.ts) 合并进 `SessionActivityKindMap`，渲染各族的 Client 为此导入 `@deepseek-ai/dsh-agent/types`。
 
+这对接缝还有一个破坏性孪生：`workspace/session-close` 请注册表在会话被永久删除前释放空闲 Agent。注册表在 `create()`/`resume()` 解析时收养工厂的 `AgentHandle.dispose` 能力——过去它被丢弃——`close(id)` 会等待它完成，因此 `sessionPersistence.delete` 运行前日志的写句柄已经关闭。没有这一步，用户留下未关闭的对话会把写句柄持有到进程退出，而后端拒绝删除仍被活跃写入方占用的日志是正确的。
+
 ### 发起方作用域
 
 每个驱动器在 `ctx.agents.withInitiator(agent, ...)` 内运行其完整生命周期，因此继承的异步链会观察到该 agent；`withoutInitiator()` 为共享定时器等无关的进程本地工作隐藏它。该边界只是进程本地归因——环境中的身份既不是存活证明，也不是授权，显式身份在 worker、进程、持久化与 wire 边界保持权威。Teardown 拒绝新边界，让返回 Promise 的边界排空，然后禁用底层存储。[发起方作用域决策](../../../.agents/notes/implemented/architecture/2026-07-15-agent-initiator-scope.zh.md) 拥有详细约定。

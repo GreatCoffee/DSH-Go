@@ -145,6 +145,21 @@ declare module '@deepseek-ai/cordis' {
      * @mode parallel
      */
     'workspace/session-stop'(request: SessionActivityRequest): Promise<void> | void
+    /**
+     * Release a Session's live in-process owner because the caller is about
+     * to delete it permanently. Deletion removes the durable log, so every
+     * holder of an open write handle must close it first: the persistence
+     * backend refuses to delete a log an active writer owns, and a live
+     * Session left behind would keep publishing a row whose log is gone.
+     * Providers release their own family — an Agent registry disposes the
+     * Agent (draining and closing the write path), for example — and must
+     * return only after the handle is closed. A provider that still holds the
+     * Session makes the deletion fail with the backend's ownership error
+     * rather than deleting underneath it.
+     * @param request - the session about to be deleted.
+     * @mode parallel
+     */
+    'workspace/session-close'(request: SessionActivityRequest): Promise<void> | void
   }
 }
 
@@ -319,7 +334,10 @@ export class WorkspaceRegistry extends Service {
    * Removal is irreversible, so a Session whose work is still running is
    * refused with {@link WorkspaceActiveSessionError} — archiving stops work,
    * deleting does not, and the reader that owns the live Session would
-   * otherwise keep appending to a log that no longer exists. The durable log
+   * otherwise keep appending to a log that no longer exists. An idle but open
+   * Session is released first through `workspace/session-close`, so a
+   * conversation the user left open deletes without an application restart.
+   * The durable log
    * goes first because it is the fact the rest derives from: a failure there
    * leaves the registry intact and the Session readable. Once the log is gone,
    * the id is dropped from every workspace record and from the archive and pin
@@ -341,6 +359,7 @@ export class WorkspaceRegistry extends Service {
         'workspace/session-activity', { sessionId }, () => Promise.resolve([]),
       )
       if (activity.length > 0) throw new WorkspaceActiveSessionError(sessionId, activity)
+      await this.closeSession(sessionId)
       await this.ctx.sessionPersistence.delete(sessionId)
       const state = this.requireState()
       for (const workspaceId of state.workspaceIds) {
@@ -537,6 +556,24 @@ export class WorkspaceRegistry extends Service {
       const failures = error instanceof AggregateError ? error.errors : [error]
       for (const failure of failures) {
         this.ctx.logger.warn(`workspace: stopping session '${sessionId}' for archive failed: ${String(failure)}`)
+      }
+    }
+  }
+
+  /**
+   * Ask every provider to release its live ownership of a Session the caller
+   * is deleting. A failing provider is logged and the deletion proceeds: the
+   * backend then refuses an owned log with its own error, which names the
+   * real obstacle instead of hiding it behind a release failure.
+   */
+  private async closeSession(sessionId: SessionId): Promise<void> {
+    try {
+      await this.ctx.parallel('workspace/session-close', { sessionId })
+    } catch (error: unknown) {
+      /* v8 ignore next -- the plain arm guards a rethrowing dispatcher. */
+      const failures = error instanceof AggregateError ? error.errors : [error]
+      for (const failure of failures) {
+        this.ctx.logger.warn(`workspace: releasing session '${sessionId}' for deletion failed: ${String(failure)}`)
       }
     }
   }

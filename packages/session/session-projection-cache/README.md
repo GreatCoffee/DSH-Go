@@ -54,7 +54,7 @@ The plugin injects `storageDomain`, `sessionProjections`, and `sessions`. The ge
 
 ### How checkpoints are written
 
-Three mandatory points always write: session creation persists the seed-derived cut, `turn/end` persists the value that listing reads want, and session disposal persists the final live cut. Between them, the configured count and interval throttles write as events accumulate. Every write atomically replaces the session's complete record through the domain write chain; a failure logs a warning and keeps the cache stale, and the next write self-heals.
+Three mandatory points always write: session creation persists the seed-derived cut, `turn/end` persists the value that listing reads want, and session disposal persists the final live cut. Between them, the configured count and interval throttles write as events accumulate. Every write atomically replaces the session's complete record through the domain write chain; a failure logs a warning and keeps the cache stale, and the next write self-heals. Deletion is the one edge that removes instead of writes: `session/deleted` drops the record, because a checkpoint folded from a log that no longer exists would otherwise answer a later lifecycle reusing that id. Eviction is fail-soft — the deletion already succeeded, so a failed delete leaves an unreachable record rather than throwing into the event path.
 
 ### Reading cached values
 

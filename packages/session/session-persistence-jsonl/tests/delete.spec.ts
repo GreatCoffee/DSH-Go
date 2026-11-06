@@ -5,6 +5,7 @@ import {
 } from '@deepseek-ai/dsh-session-persistence'
 import * as JsonlSessionPersistence from '@deepseek-ai/dsh-session-persistence-jsonl'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
+import { existsSync } from 'node:fs'
 import { mkdtemp, rm, stat } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
@@ -69,6 +70,24 @@ describe('JsonlSessionPersistence.delete', () => {
     expect((await ctx.sessionPersistence.list()).map(s => s.header.id)).toContain(header.id)
     await ctx.sessionPersistence.delete(header.id)
     expect(await ctx.sessionPersistence.stat(header.id)).toBeUndefined()
+  })
+
+  it('announces the irreversible edge once the artifacts are gone', async () => {
+    const header = meta('delete-announced', '/work')
+    const handle = await ctx.sessionPersistence.create(header)
+    await handle.append(oneTurnLog())
+    await handle.close()
+    const seen: string[] = []
+    // Derived state (projection checkpoints, caches) can only drop the id if
+    // the backend says the log is gone; the announcement must follow the
+    // removal, never precede it.
+    ctx.on('session/deleted', (id) => {
+      seen.push(`${id}:${String(existsSync(sessionDir(root, '/work', header.id)))}`)
+    })
+
+    await ctx.sessionPersistence.delete(header.id)
+
+    expect(seen).toEqual([`${header.id}:false`])
   })
 
   it('reports an unknown id instead of succeeding silently', async () => {

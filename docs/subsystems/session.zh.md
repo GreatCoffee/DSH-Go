@@ -1362,6 +1362,31 @@ Types: [Scoped](scope.zh.md)
 
 Source: [`packages/core/session/src/index.ts`](../../packages/core/session/src/index.ts)
 
+<a id="sessiondeleted--emit"></a>
+
+#### `session/deleted` — emit
+
+Emitted after a persistence backend permanently removed one session's durable log. Unlike 'session/disposed' (the live-to-cold moment, where the log still exists and may be reopened), this edge is irreversible: derived state keyed by the id — projection checkpoints, caches — must drop its record instead of serving it to a later lifecycle. Emitted by the backend that performed the deletion, after the data is gone; listener failures are logged and contained.
+
+```ts cordis-catalog
+/**
+ * Emitted after a persistence backend permanently removed one session's
+ * durable log. Unlike {@link 'session/disposed'} (the live-to-cold moment,
+ * where the log still exists and may be reopened), this edge is
+ * irreversible: derived state keyed by the id — projection checkpoints,
+ * caches — must drop its record instead of serving it to a later
+ * lifecycle. Emitted by the backend that performed the deletion, after
+ * the data is gone; listener failures are logged and contained.
+ * @param sessionId - the session whose durable log no longer exists.
+ * @mode emit
+ */
+'session/deleted'(sessionId: SessionId): void
+```
+
+Types: [SessionId](core.zh.md)
+
+Source: [`packages/core/session/src/index.ts`](../../packages/core/session/src/index.ts)
+
 <a id="sessiondisposed--emit"></a>
 
 #### `session/disposed` — emit

@@ -218,6 +218,12 @@ interface AgentEntry {
   announced: boolean
   announcing: boolean
   detachRequested: boolean
+  /**
+   * The factory's teardown capability, adopted when `create`/`resume`
+   * resolves. Holding it lets the registry release an idle Agent on request
+   * (`workspace/session-close`) instead of only at owner-fiber unload.
+   */
+  dispose: (() => Promise<void>) | undefined
 }
 
 /** One tracked boundary plus its inherited nesting chain. */
@@ -286,6 +292,11 @@ export class AgentRegistry extends Service {
     // Archive admission: the Workspace registry asks what still runs for a
     // Session before hiding it; a running turn answers here, for every Agent.
     installTurnArchiveAdmission(ctx, sessionId => this.get(sessionId))
+    // Releasing a live Agent is the deletion path's precondition: deletion
+    // removes the durable log, and the persistence backend refuses a log whose
+    // write handle is still open. The factory teardown drains and closes that
+    // handle before this resolves.
+    ctx.on('workspace/session-close', async ({ sessionId }) => { await this.close(sessionId) })
   }
 
   protected async [Service.init](): Promise<void> {
@@ -416,7 +427,8 @@ export class AgentRegistry extends Service {
     const { target } = this.requireFactory()
     const receiver = getTraceable(ownerCtx, target)
     // oxlint-disable-next-line typescript/unbound-method -- Reflect.apply intentionally supplies the caller-traced receiver
-    return Reflect.apply(target.createAgent, receiver, [ownerCtx, options])
+    const handle: AgentHandle = await Reflect.apply(target.createAgent, receiver, [ownerCtx, options])
+    return this.adopt(handle)
   }
 
   /**
@@ -431,7 +443,42 @@ export class AgentRegistry extends Service {
     const { target } = this.requireFactory()
     const receiver = getTraceable(ownerCtx, target)
     // oxlint-disable-next-line typescript/unbound-method -- Reflect.apply intentionally supplies the caller-traced receiver
-    return Reflect.apply(target.resume, receiver, [ownerCtx, options])
+    const handle: AgentHandle = await Reflect.apply(target.resume, receiver, [ownerCtx, options])
+    return this.adopt(handle)
+  }
+
+  /**
+   * Record the factory teardown capability on the registry entry the handle
+   * published. The capability stays with the owner that received the handle;
+   * the registry keeps a second reference so `workspace/session-close` can
+   * release an Agent whose owner never disposes it (the desktop keeps agents
+   * for the whole process otherwise).
+   * @param handle - the factory-created Agent and its disposer.
+   * @returns the same handle, unchanged for the caller.
+   */
+  private adopt(handle: AgentHandle): AgentHandle {
+    const entry = this.store.get(handle.agent.id)
+    if (entry !== undefined && entry.agent === handle.agent) entry.dispose = handle.dispose
+    return handle
+  }
+
+  /**
+   * Release one live Agent by tearing down exactly the lifetime the registry
+   * published: stop the loop, drain and close its write path, unregister the
+   * Agent, remove the Session from the store, and unwind the scope. The
+   * owning fiber's capability is consumed, so a later unload of that fiber
+   * finds nothing left to do. Callers deleting a Session's durable log must
+   * await this first — the persistence backend refuses an owned write handle.
+   * @param id - the shared agent/session id to release.
+   * @returns `true` when a live entry was disposed, `false` when none is live.
+   * @throws the factory's aggregated teardown failure after cleanup ran.
+   */
+  async close(id: SessionId): Promise<boolean> {
+    const entry = this.store.get(id)
+    const dispose = entry?.dispose
+    if (entry === undefined || dispose === undefined) return false
+    await dispose()
+    return true
   }
 
   /**
@@ -487,6 +534,7 @@ export class AgentRegistry extends Service {
       announced: false,
       announcing: false,
       detachRequested: false,
+      dispose: undefined,
     }
     this.store.set(id, entry)
     let entered = true
@@ -515,6 +563,8 @@ export class AgentRegistry extends Service {
     /* v8 ignore next -- enter() rejects replacement while this single-shot detach capability is live. */
     if (this.store.get(entry.id) !== entry) return
     this.store.delete(entry.id)
+    // The lifetime is over: a later close must not replay the same teardown.
+    entry.dispose = undefined
     // An insertion rolled back before announce was never externally created,
     // so emitting disposed would invent an impossible lifecycle edge. Marking
     // happens before the created emit: if a later created listener throws,

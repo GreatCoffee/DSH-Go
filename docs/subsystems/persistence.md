@@ -432,7 +432,10 @@ abstract list(options?: SessionPersistenceListOptions): Promise<readonly Session
  *
  * Backends that cannot delete refuse with
  * `SessionPersistenceDeleteUnsupportedError`; the default implementation
- * below is that refusal. A backend that supports deletion overrides it.
+ * below is that refusal. A backend that supports deletion overrides it and
+ * emits `session/deleted` once the artifacts are gone, so derived state
+ * (projection checkpoints, caches) drops its record for that id instead of
+ * serving a later lifecycle that reuses the slot.
  * @param id - the stored session to remove.
  * @param options - optional cancellation.
  * @throws {SessionPersistenceNotFoundError} when no such session is visible.

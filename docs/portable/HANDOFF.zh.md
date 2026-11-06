@@ -9,11 +9,11 @@
 |---|---|
 | 上游 | `deepseek-ai/deepseek-harness`（MIT），当前基线提交 `fcc0ad46`，产品版本 `0.2.2-rc.1` |
 | 本仓库 | `GreatCoffee/DSH-Go`（公开），`master` |
-| 最近构建提交 | `031e0b7fd4`（含双语更新器 + 日志） |
-| 最近发布 | `https://github.com/GreatCoffee/DSH-Go/releases/tag/go-031e0b7fd4` |
+| 最近构建提交 | `1869e914bd`（XDG 目录归位；上一版 `031e0b7fd4` 含双语更新器 + 日志） |
+| 最近发布 | `https://github.com/GreatCoffee/DSH-Go/releases/tag/go-1869e914bd` |
 | 安装目录 | `D:\Documents\Softwares\DSH-Go` |
 | 活动工作区 | `D:\Documents\Softwares\DSH-Go\portable\workspace\DSH-Portable`（仓库在 `...\dsh-go`） |
-| 已装插件 | `dsh-cost-meter@1.9.57`（profile bundles 里已启用） |
+| 已装插件 | `dsh-cost-meter@^1.9.57`、`dsh-ops@0.5.0`、`billion-context@0.1.212`（均在 profile bundles 里启用） |
 | Actions | 已关闭（仓库公开后上游 20 个工作流会自动跑，全是失败邮件，已停用） |
 | Dependabot | 已移除 `.github/dependabot.yml`，PR 与分支已清 |
 
@@ -112,6 +112,9 @@ pwsh scripts/build-portable.ps1          # 在短路径副本里
 6. **`gh` 会误判仓库**：仓库同时有 `upstream` 远程时，`gh release` 可能解析到官方仓库，必须显式 `--repo GreatCoffee/DSH-Go`。
 7. **API 限流**：匿名调用 GitHub REST API 会被限流，更新器因此改为解析 `releases/latest` 重定向，不要改回去。
 8. **会话空壳**：只有头部、没有事件的会话在 UI 里删不掉，需要在 `sessions\<projectKey>\session-*` 层删除并清 `storages\session_projcache`。
+9. **发布期间 release 一直是 Draft**：`gh release create` 传 407 MB 资产要十几分钟，期间 `isDraft` 返回 `true`、`assets` 里只有已传完的 `.sha256`，传完才转正并标记 Latest。不要当成失败去重跑。
+10. **`netstat -e` 计数在 4 GiB 回绕**：累计字节从 4,142,064,790 掉到 335,306,974 是计数器翻转，不是断网；判断上传是否在动只能看相邻采样增量。
+11. **插件状态默认落在用户目录**：XDG 感知的插件（如 billion-context）会写 `~/.config`、`~/.cache`、`~/.local/state`。portable 已在 `applyPortableEnvironment` 里把 `XDG_CONFIG_HOME`/`XDG_CACHE_HOME`/`XDG_STATE_HOME` 指向 `portable\config|cache|state`；升级前留下的用户目录副本要手动搬走。
 
 ## 6. 数据边界与事故
 
@@ -130,7 +133,8 @@ pwsh scripts/build-portable.ps1          # 在短路径副本里
 
 | 事项 | 状态 |
 |---|---|
-| 插件兼容性实测 | 已完成 |
+| 插件兼容性实测 | 已完成（dsh-ops 0.4.4 因 `engines.dsh <0.2.2-0` 被拒，0.5.0 适配 0.2.2-rc.1） |
+| 插件状态目录随包移动 | 已完成（XDG 三变量，发布 `go-1869e914bd`） |
 | 升级后插件保留 | 已完成（真实发布包演练） |
 | macOS 便携 | 挂起（需 Mac 构建） |
 | Linux 便携 | 挂起（Desktop 非官方发布目标，可行路径是 CLI/Web 便携包） |

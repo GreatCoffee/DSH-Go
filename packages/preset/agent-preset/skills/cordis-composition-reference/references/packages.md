@@ -242,6 +242,7 @@ Every package below exports a Cordis plugin that a bundle patch can name in a Lo
 | `@deepseek-ai/dsh-client-ui-cordis` | no | Cordis dynamic-plugin definition card: the keyed cordis_define tool row with its run/stop switch |
 | `@deepseek-ai/dsh-cordis-client-runner` | no | Browser half of dynamic dual-half plugin packages: event subscription, closure evaluation, guard facade, and loader entries |
 | `@deepseek-ai/dsh-cordis-host-runner` | yes | Dynamic package definition registry, host-half sandbox lifecycle, and invoke handler table for model-mounted dual-half packages |
+| `@deepseek-ai/dsh-go-session-delete` | no | DSH-Go permanent Session deletion: a delete entry under Archive in the Session row menu plus its confirmation dialog |
 | `@deepseek-ai/dsh-tool-cordis` | no | Read-only runtime API inspection for Harness plugin development |
 
 ## feedback

@@ -2923,6 +2923,12 @@ export const SERVICE_API: readonly ServiceApiEntry[] = [
         parameters: [{ name: 'options', description: 'optional cancellation.' }],
         returns: 'one snapshot per stored session.',
       },
+      {
+        signature: 'async delete(id: SessionId, options?: SessionPersistenceDeleteOptions): Promise<void>',
+        description: 'Permanently remove one stored session\'s durable artifacts.\n\nDeletion is irreversible and unrecoverable: no tombstone, backup, or regeneration remains, and a later `open`/`stat`/`list` no longer observes the session. The backend must refuse while any write handle still owns the session — in this process or another — so a deleted log can never be resurrected by a late append.\n\nBackends that cannot delete refuse with `SessionPersistenceDeleteUnsupportedError`; the default implementation below is that refusal. A backend that supports deletion overrides it.',
+        parameters: [{ name: 'id', description: 'the stored session to remove.' }, { name: 'options', description: 'optional cancellation.' }],
+        throws: ['{SessionPersistenceNotFoundError} when no such session is visible.', '{SessionAlreadyOwnedError} while an active write handle owns it.', '{SessionPersistenceDeleteUnsupportedError} when the backend keeps no removable artifact.'],
+      },
     ],
   },
   {
@@ -4552,6 +4558,12 @@ export const SERVICE_API: readonly ServiceApiEntry[] = [
         returns: 'the complete resulting archive set.',
       },
       {
+        signature: '@Remote(\'deleteSession\') deleteSession(request: WorkspaceDeleteSessionRequest): Promise<WorkspaceDeleteSessionValue>',
+        description: 'Permanently delete one Session: its durable log and every registry trace. Irreversible, and refused while the Session has running work.',
+        parameters: [{ name: 'request', description: 'Session identity to delete.' }],
+        returns: 'the deleted Session id.',
+      },
+      {
         signature: '@Remote(\'unarchiveSession\') unarchiveSession(request: WorkspaceUnarchiveSessionRequest): Promise<WorkspaceArchiveValue>',
         description: 'Restore one archived Session to Workspace grouping surfaces.',
         parameters: [{ name: 'request', description: 'Session identity to unarchive.' }],
@@ -4649,6 +4661,13 @@ export const SERVICE_API: readonly ServiceApiEntry[] = [
         description: 'Delete one workspace registration while retaining its directory and every session log. The durable order is updated before the table deletion; a failed table write restores the prior order and keeps the entity published. Unknown ids are an idempotent no-op for domain callers.',
         parameters: [{ name: 'id', description: 'Workspace registration to remove.' }],
         returns: '`true` when a record was deleted, `false` when it was unknown.',
+      },
+      {
+        signature: 'deleteSession(sessionId: SessionId): Promise<void>',
+        description: 'Permanently remove one Session: its durable log through `sessionPersistence` and every registry trace of it — workspace accounting, the archive and pin sets, and the canonical-cwd header index.\n\nRemoval is irreversible, so a Session whose work is still running is refused with WorkspaceActiveSessionError — archiving stops work, deleting does not, and the reader that owns the live Session would otherwise keep appending to a log that no longer exists. The durable log goes first because it is the fact the rest derives from: a failure there leaves the registry intact and the Session readable. Once the log is gone, the id is dropped from every workspace record and from the archive and pin sets in the same queued operation, and its header index entries are cleared, so no grouping surface, `sessionKnown` check, or later `resolveByPath` resurrects it. Deletion never touches the workspace directory or any other Session.',
+        parameters: [{ name: 'sessionId', description: 'the Session to remove.' }],
+        returns: 'resolution after the log and every registry trace are gone.',
+        throws: ['{WorkspaceUnknownSessionError} when neither live state nor storage knows the Session.', '{WorkspaceActiveSessionError} while the Session has running work.'],
       },
       {
         signature: 'insertBefore(id: WorkspaceId, beforeId?: WorkspaceId): Promise<readonly WorkspaceId[]>',
@@ -8612,6 +8631,10 @@ export const TYPE_API: readonly TypeApiEntry[] = [
     declaration: 'export interface SessionPersistenceCreateOptions {\n    readonly signal?: AbortSignal;\n    readonly inheritedEventCount?: SessionLogOffset;\n}',
   },
   {
+    name: 'SessionPersistenceDeleteOptions',
+    declaration: 'export interface SessionPersistenceDeleteOptions {\n    readonly signal?: AbortSignal;\n}',
+  },
+  {
     name: 'SessionPersistenceListOptions',
     declaration: 'export interface SessionPersistenceListOptions {\n    readonly signal?: AbortSignal;\n}',
   },
@@ -10206,6 +10229,14 @@ export const TYPE_API: readonly TypeApiEntry[] = [
   {
     name: 'WorkspaceDeleteRequest',
     declaration: 'export interface WorkspaceDeleteRequest {\n    readonly workspaceId: WorkspaceId;\n}',
+  },
+  {
+    name: 'WorkspaceDeleteSessionRequest',
+    declaration: 'export interface WorkspaceDeleteSessionRequest {\n    readonly sessionId: SessionId;\n}',
+  },
+  {
+    name: 'WorkspaceDeleteSessionValue',
+    declaration: 'export interface WorkspaceDeleteSessionValue {\n    readonly sessionId: SessionId;\n}',
   },
   {
     name: 'WorkspaceDeleteValue',

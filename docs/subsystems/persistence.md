@@ -420,6 +420,26 @@ abstract stat(id: SessionId, options?: SessionPersistenceStatOptions): Promise<S
  * @returns one snapshot per stored session.
  */
 abstract list(options?: SessionPersistenceListOptions): Promise<readonly SessionPersistenceSnapshot[]>
+
+/**
+ * Permanently remove one stored session's durable artifacts.
+ *
+ * Deletion is irreversible and unrecoverable: no tombstone, backup, or
+ * regeneration remains, and a later `open`/`stat`/`list` no longer observes
+ * the session. The backend must refuse while any write handle still owns the
+ * session — in this process or another — so a deleted log can never be
+ * resurrected by a late append.
+ *
+ * Backends that cannot delete refuse with
+ * `SessionPersistenceDeleteUnsupportedError`; the default implementation
+ * below is that refusal. A backend that supports deletion overrides it.
+ * @param id - the stored session to remove.
+ * @param options - optional cancellation.
+ * @throws {SessionPersistenceNotFoundError} when no such session is visible.
+ * @throws {SessionAlreadyOwnedError} while an active write handle owns it.
+ * @throws {SessionPersistenceDeleteUnsupportedError} when the backend keeps no removable artifact.
+ */
+async delete(id: SessionId, options?: SessionPersistenceDeleteOptions): Promise<void>
 ```
 
 Types: [SessionId](core.md)

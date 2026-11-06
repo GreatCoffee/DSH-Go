@@ -366,6 +366,14 @@ Host service backing the generated `ctx.remote.workspace` namespace.
 @Remote('archiveSession') archiveSession(request: WorkspaceArchiveSessionRequest): Promise<WorkspaceArchiveValue>
 
 /**
+ * Permanently delete one Session: its durable log and every registry trace.
+ * Irreversible, and refused while the Session has running work.
+ * @param request - Session identity to delete.
+ * @returns the deleted Session id.
+ */
+@Remote('deleteSession') deleteSession(request: WorkspaceDeleteSessionRequest): Promise<WorkspaceDeleteSessionValue>
+
+/**
  * Restore one archived Session to Workspace grouping surfaces.
  * @param request - Session identity to unarchive.
  * @returns the complete resulting archive set.
@@ -519,6 +527,29 @@ list(): Workspace[]
  * @returns `true` when a record was deleted, `false` when it was unknown.
  */
 delete(id: WorkspaceId): Promise<boolean>
+
+/**
+ * Permanently remove one Session: its durable log through
+ * `sessionPersistence` and every registry trace of it — workspace
+ * accounting, the archive and pin sets, and the canonical-cwd header index.
+ *
+ * Removal is irreversible, so a Session whose work is still running is
+ * refused with {@link WorkspaceActiveSessionError} — archiving stops work,
+ * deleting does not, and the reader that owns the live Session would
+ * otherwise keep appending to a log that no longer exists. The durable log
+ * goes first because it is the fact the rest derives from: a failure there
+ * leaves the registry intact and the Session readable. Once the log is gone,
+ * the id is dropped from every workspace record and from the archive and pin
+ * sets in the same queued operation, and its header index entries are
+ * cleared, so no grouping surface, `sessionKnown` check, or later
+ * `resolveByPath` resurrects it. Deletion never touches the workspace
+ * directory or any other Session.
+ * @param sessionId - the Session to remove.
+ * @returns resolution after the log and every registry trace are gone.
+ * @throws {WorkspaceUnknownSessionError} when neither live state nor storage knows the Session.
+ * @throws {WorkspaceActiveSessionError} while the Session has running work.
+ */
+deleteSession(sessionId: SessionId): Promise<void>
 
 /**
  * Move one workspace within the durable display order, DOM-insertBefore-like.

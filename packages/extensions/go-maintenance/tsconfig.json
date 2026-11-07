@@ -1,17 +1,7 @@
 {
-  "extends": "../../../tsconfig.base.json",
-  "compilerOptions": {
-    "rootDir": "src",
-    "outDir": "lib/types"
-  },
-  "files": ["src/index.ts", "src/scan.ts", "src/types.ts"],
+  "files": [],
   "references": [
-    { "path": "../../../vendor/cordis" },
-    { "path": "../../core/session" },
-    { "path": "../../session/session-persistence" },
-    { "path": "../../session/session-projection-cache" },
-    { "path": "../../typert/protocol" },
-    { "path": "../../util/home-paths" },
-    { "path": "../../workspace/workspace" }
+    { "path": "./tsconfig.host.json" },
+    { "path": "./tsconfig.client.json" }
   ]
 }

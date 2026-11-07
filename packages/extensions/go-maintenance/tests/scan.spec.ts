@@ -7,7 +7,7 @@ import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
-import { collectDigests, directoryBytes, orphanDirectories, orphanObjects } from '../src/scan.ts'
+import { collectDigests, collectLogDigests, directoryBytes, orphanDirectories, orphanObjects } from '../src/scan.ts'
 
 let root: string
 
@@ -38,8 +38,40 @@ describe('orphan session directories', () => {
     expect(orphans.reduce((total, orphan) => total + orphan.bytes, 0)).toBe(10)
   })
 
+  it('keeps a live directory whether the store spells its id plain or prefixed', async () => {
+    const project = join(root, '--work--')
+    await seed(join(project, 'session-plain', 'session.v4.jsonl.zstd'), 'x')
+    await seed(join(project, 'session-prefixed', 'session.v4.jsonl.zstd'), 'x')
+
+    expect(await orphanDirectories(root, new Set(['plain', 'session-prefixed']))).toEqual([])
+  })
+
   it('reports nothing when the root does not exist', async () => {
     expect(await orphanDirectories(join(root, 'missing'), new Set())).toEqual([])
+  })
+})
+
+describe('attachment digest walk', () => {
+  it('pages through a log instead of asking for all of it at once', async () => {
+    const digest = 'c'.repeat(64)
+    const events = Array.from({ length: 1200 }, (_, index) => ({ seq: index + 1, body: index === 900 ? `sha256:${digest}` : 'plain' }))
+    const reads: number[] = []
+    const source = {
+      async read(offset = 0, length = Number.MAX_SAFE_INTEGER) {
+        reads.push(length)
+        return { events: events.slice(offset, offset + length) }
+      },
+    }
+
+    const digests = await collectLogDigests(source, new Set<string>(), 500)
+
+    expect([...digests]).toEqual([digest])
+    expect(reads).toEqual([500, 500, 500, 500])
+  })
+
+  it('stops on the first empty page', async () => {
+    const source = { async read() { return { events: [] } } }
+    expect([...(await collectLogDigests(source, new Set<string>()))]).toEqual([])
   })
 })
 

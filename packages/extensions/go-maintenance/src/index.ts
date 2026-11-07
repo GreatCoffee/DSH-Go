@@ -19,7 +19,7 @@ import type {} from '@deepseek-ai/dsh-session-projection-cache'
 import { Remote, TypertRemoteService } from '@deepseek-ai/dsh-typert-protocol'
 import type { Context } from '@deepseek-ai/cordis'
 import type { SessionId } from '@deepseek-ai/dsh-session'
-import { collectDigests, orphanDirectories, orphanObjects, type ScannedFile } from './scan.ts'
+import { collectLogDigests, orphanDirectories, orphanObjects, type ScannedFile } from './scan.ts'
 import type { MaintenanceOutcome, MaintenanceReport, MaintenanceTarget } from './types.ts'
 
 /** What the three scans found, plus the ids the store still lists. */
@@ -128,11 +128,7 @@ export default class StorageMaintenance extends TypertRemoteService {
         continue
       }
       try {
-        for (;;) {
-          const page = await handle.read()
-          if (page.events.length === 0) break
-          collectDigests(page.events, digests)
-        }
+        await collectLogDigests(handle, digests)
       } catch (_unreadable: unknown) {
         return undefined
       } finally {

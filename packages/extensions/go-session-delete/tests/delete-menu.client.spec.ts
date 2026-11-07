@@ -1,5 +1,4 @@
 import { Context } from '@deepseek-ai/cordis'
-import { RemoteError } from '@deepseek-ai/dsh-typert-protocol'
 import { LocaleRuntime } from '@deepseek-ai/dsh-client-locale/client'
 import { MenuRegistry } from '@deepseek-ai/dsh-client-ui-context-menu/src/client/registry.ts'
 import { SessionId } from '@deepseek-ai/dsh-session/types'
@@ -9,8 +8,8 @@ import { apply, inject } from '../src/client/index.ts'
 
 /**
  * Mount the browser half over a real menu registry, locale runtime, and
- * overlay stub, with a stub `remote.workspace` the test drives.
- * @returns the mounted fiber, the overlay entries the plugin seated, and the stub Remote.
+ * overlay stub, with a stub `uiWorkspace` navigation the test drives.
+ * @returns the mounted fiber, the overlay entries the plugin seated, and the stub navigation.
  */
 function bench() {
   const ctx = new Context()
@@ -35,10 +34,8 @@ function bench() {
       return () => {}
     },
   } as never)
-  const deleteSession = vi.fn(async () => ({ ok: true as const, value: { sessionId: SessionId('gone') } }))
-  const workspace = { deleteSession }
-  ctx.provide('remote', { workspace } as never)
-  ctx.provide('remote.workspace', workspace as never)
+  const deleteSession = vi.fn(async (_sessionId: SessionId) => {})
+  ctx.provide('uiWorkspace', { deleteSession } as never)
   const fiber = ctx.plugin({ inject, apply })
   const target = { kind: 'session' as const, value: { sessionId: SessionId('gone'), displayTitle: 'Doomed' } }
   return { ctx, fiber, registry, locale, registered, deleteSession, target }
@@ -82,20 +79,34 @@ it('asks for confirmation before deleting and settles the request either way', a
   expect(dialog?.hooks.deleteRequest.getSnapshot()).toEqual({ sessionId: 'gone', displayTitle: 'Doomed' })
 
   await dialog?.deleteSession(SessionId('gone'))
-  expect(b.deleteSession).toHaveBeenCalledWith({ sessionId: 'gone' })
+  expect(b.deleteSession).toHaveBeenCalledWith(SessionId('gone'))
   dialog?.settleDeleteSession()
   expect(dialog?.hooks.deleteRequest.getSnapshot()).toBeNull()
 })
 
-it('turns an active-session refusal into a localized message', async () => {
+it('turns a refusal carried by the navigation error into a localized message', async () => {
   const b = bench()
   await b.fiber.await()
   b.locale.setLocale('zh')
   const dialog = b.registered[0]?.inject?.()
-  b.deleteSession.mockResolvedValueOnce({
-    ok: false,
-    error: new RemoteError('workspace/session-active', 'still running', { sessionId: SessionId('gone'), activity: [] }),
-  } as never)
+  // Client plugin bundles share no error-class identity, so the name decides.
+  b.deleteSession.mockRejectedValueOnce(Object.assign(
+    new Error('workspace session deletion failed: workspace/session-active: still running'),
+    { name: 'WorkspaceDeleteSessionError', rpcError: { code: 'workspace/session-active', message: 'still running' } },
+  ))
   await expect(dialog?.deleteSession(SessionId('gone')))
     .rejects.toThrow('该会话仍在运行，请先停止其任务后再删除。')
+})
+
+it('turns a missing-session refusal into a localized message', async () => {
+  const b = bench()
+  await b.fiber.await()
+  b.locale.setLocale('zh')
+  const dialog = b.registered[0]?.inject?.()
+  b.deleteSession.mockRejectedValueOnce(Object.assign(
+    new Error('workspace session deletion failed: session/not-found: gone'),
+    { name: 'WorkspaceDeleteSessionError', rpcError: { code: 'session/not-found', message: 'gone' } },
+  ))
+  await expect(dialog?.deleteSession(SessionId('gone')))
+    .rejects.toThrow('该会话已不存在，可能已被删除。')
 })

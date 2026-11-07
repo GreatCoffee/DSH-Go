@@ -31,6 +31,20 @@ export class WorkspaceArchiveError extends Error {
   }
 }
 
+/**
+ * Permanent deletion failed on the Host. `rpcError.code` distinguishes a
+ * missing session (`session/not-found`) from a carrier fault; a Session with
+ * running work has its work stopped instead of refusing.
+ */
+export class WorkspaceDeleteSessionError extends Error {
+  override readonly name = 'WorkspaceDeleteSessionError'
+
+  /** @param rpcError - Host business or folded carrier failure. */
+  constructor(readonly rpcError: RemoteFailure) {
+    super(`workspace session deletion failed: ${rpcError.code}: ${rpcError.message}`)
+  }
+}
+
 /** Bare observable source for the Workspace Controller snapshot. */
 export interface WorkspaceSource {
   /** Read the identity-stable current snapshot. */
@@ -85,6 +99,15 @@ export interface IWorkspaces {
    *   running work fails as `workspace/session-active`, its details naming what runs.
    */
   archiveSession(sessionId: SessionId, options?: { readonly stopActivity?: boolean }): Promise<void>
+  /**
+   * Permanently delete a Session: its durable log, its registry trace, and its
+   * place on every grouping surface. Running work is stopped first; the Host
+   * closes the Session's live reply in the same operation.
+   * @param sessionId - Session to destroy permanently; the operation is irreversible.
+   * @throws {WorkspaceDeleteSessionError} when the Host refuses, for example a
+   *   missing Session (`session/not-found`) or a carrier fault.
+   */
+  deleteSession(sessionId: SessionId): Promise<void>
   /**
    * Unarchive a Session from the archived Session list.
    * @param sessionId - Session to unarchive.
@@ -158,6 +181,11 @@ export class WorkspaceController extends Service implements IWorkspaces {
   async archiveSession(sessionId: SessionId, options: { readonly stopActivity?: boolean } = {}): Promise<void> {
     const result = await this.model.archiveSession(sessionId, options)
     if (!result.ok) throw new WorkspaceArchiveError(result.error)
+  }
+
+  async deleteSession(sessionId: SessionId): Promise<void> {
+    const result = await this.model.deleteSession(sessionId)
+    if (!result.ok) throw new WorkspaceDeleteSessionError(result.error)
   }
 
   async unarchiveSession(sessionId: SessionId): Promise<void> {

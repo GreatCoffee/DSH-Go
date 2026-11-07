@@ -96,6 +96,15 @@ export interface UiWorkspace {
    */
   archiveSession(sessionId: SessionId, options?: { readonly stopActivity?: boolean }): Promise<void>
   /**
+   * Permanently delete a Session — its durable log, its registry trace, and its
+   * place on every grouping surface — and clear it when it is the current view.
+   * @param sessionId - Session to destroy permanently; the operation is irreversible.
+   * @throws the Workspace Controller's named delete error (`WorkspaceDeleteSessionError`,
+   *   imported as a value identity by callers) when the Host refuses, for example a
+   *   missing Session (`session/not-found`) or a carrier fault.
+   */
+  deleteSession(sessionId: SessionId): Promise<void>
+  /**
    * Unarchive a Session, restoring it to its recorded Workspace position.
    * @param sessionId - Session to unarchive.
    */
@@ -381,6 +390,11 @@ class UiWorkspaceService extends Service implements UiWorkspace {
 
   async archiveSession(sessionId: SessionId, options: { readonly stopActivity?: boolean } = {}): Promise<void> {
     await this.workspaces.archiveSession(sessionId, options)
+    if (this.mainReference?.sessionId === sessionId) this.clearMain()
+  }
+
+  async deleteSession(sessionId: SessionId): Promise<void> {
+    await this.workspaces.deleteSession(sessionId)
     if (this.mainReference?.sessionId === sessionId) this.clearMain()
   }
 

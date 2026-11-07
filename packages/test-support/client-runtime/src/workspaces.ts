@@ -172,6 +172,19 @@ export class TestWorkspaces implements IWorkspaces {
   }
 
   /**
+   * Delete a session permanently (recorded). The default is inert: fixture
+   * state keeps a removable session view keyed elsewhere, so a stub takes over.
+   * @param sessionId - session to delete.
+   */
+  async deleteSession(sessionId: SessionId): Promise<void> {
+    this.calls.push({ method: 'deleteSession', args: [sessionId] })
+    const stub = this.stubs.get('deleteSession')
+    if (stub !== undefined) {
+      await (stub(sessionId) as Promise<void>)
+    }
+  }
+
+  /**
    * Pin a session (recorded). The default mirrors the production face's
    * observable effect: the id leads the list state's pin set.
    * @param sessionId - session to pin.

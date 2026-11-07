@@ -18,6 +18,13 @@ vi.mock('../src/preload-windows.ts', () => ({ syncWindowsAppearance: vi.fn() }))
 vi.mock('../src/preload-mandatory-overlay.ts', () => ({ installMandatoryUpdateOverlay: vi.fn() }))
 
 beforeEach(() => { vi.stubGlobal('process', { ...process, isMainFrame: true }) })
+
+/** Narrow the carrier's optional update bridge; the vendor build always exposes it. */
+function updatesOf(api: DshDesktopProductApi): NonNullable<DshDesktopProductApi['updates']> {
+  const updates = api.updates
+  if (updates === undefined) throw new Error('the vendor carrier exposes the update bridge')
+  return updates
+}
 afterEach(() => { document.body.replaceChildren(); vi.unstubAllGlobals(); vi.restoreAllMocks(); vi.clearAllMocks(); vi.resetModules() })
 
 it('reads only native login API-key presence through the onboarding bridge', async () => {
@@ -55,14 +62,15 @@ it('limits product documents to update status and a native confirmation action',
   vi.stubGlobal('location', new URL('dsh-app://app/index.html'))
   await import('../src/preload-app.ts')
   const api = electron.contextBridge.exposeInMainWorld.mock.calls.find(([name]) => name === 'dshDesktop')?.[1] as DshDesktopProductApi
-  await api.updates.status()
-  await api.updates.open()
+  const updates = updatesOf(api)
+  await updates.status()
+  await updates.open()
   expect(electron.ipcRenderer.invoke.mock.calls).toEqual([[DESKTOP_IPC.updatesStatus], [DESKTOP_IPC.updatesOpen]])
   expect(api).not.toHaveProperty('plugins')
   expect(api).not.toHaveProperty('backend')
-  expect(api.updates).not.toHaveProperty('install')
+  expect(updates).not.toHaveProperty('install')
   const listener = vi.fn()
-  const dispose = api.updates.subscribe(listener)
+  const dispose = updates.subscribe(listener)
   const handler = electron.ipcRenderer.on.mock.calls.find(([channel]) => channel === DESKTOP_IPC.updatesPresentation)?.[1] as
     (event: unknown, state: unknown) => void
   handler({}, { visible: false })
@@ -298,11 +306,12 @@ it('exposes channel choices and scoped subscriptions without exposing updater ob
   vi.stubGlobal('location', new URL('dsh-app://app/index.html'))
   await import('../src/preload-app.ts')
   const api = electron.contextBridge.exposeInMainWorld.mock.calls.find(([name]) => name === 'dshDesktop')?.[1] as DshDesktopProductApi
-  await api.updates.channels.get()
-  await api.updates.channels.set('stable')
+  const updates = updatesOf(api)
+  await updates.channels.get()
+  await updates.channels.set('stable')
   expect(electron.ipcRenderer.invoke.mock.calls).toEqual([[DESKTOP_IPC.updatesChannelGet], [DESKTOP_IPC.updatesChannelSet, 'stable']])
   const listener = vi.fn()
-  const dispose = api.updates.channels.subscribe(listener)
+  const dispose = updates.channels.subscribe(listener)
   const handler = electron.ipcRenderer.on.mock.calls.find(([channel]) => channel === DESKTOP_IPC.updatesChannelChanged)?.[1] as
     (event: unknown, state: unknown) => void
   const state = { channel: 'stable', packagedChannel: 'nightly', changing: false }
@@ -310,4 +319,13 @@ it('exposes channel choices and scoped subscriptions without exposing updater ob
   expect(listener).toHaveBeenCalledWith(state)
   dispose()
   expect(electron.ipcRenderer.off).toHaveBeenCalledWith(DESKTOP_IPC.updatesChannelChanged, handler)
+})
+
+it('exposes a portable build identity and no vendor update bridge', async () => {
+  vi.stubGlobal('process', { ...process, isMainFrame: true, argv: [...process.argv, '--dsh-go-portable=2f292ba37d'] })
+  vi.stubGlobal('location', new URL('dsh-app://app/index.html'))
+  await import('../src/preload-app.ts')
+  const api = electron.contextBridge.exposeInMainWorld.mock.calls.find(([name]) => name === 'dshDesktop')?.[1] as DshDesktopProductApi
+  expect(api.goPortable).toEqual({ build: '2f292ba37d' })
+  expect(api.updates).toBeUndefined()
 })

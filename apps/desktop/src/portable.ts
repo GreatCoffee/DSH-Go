@@ -127,6 +127,37 @@ export function readPortableState(layout: PortableLayout): PortableState | undef
   }
 }
 
+/** Build identity written beside the executable by the packaging script. */
+export interface PortableBuild {
+  /** Upstream release the runtime was assembled from, such as `0.2.2-rc.1`. */
+  readonly version?: string | undefined
+  /** Source commit the runtime was assembled from. */
+  readonly commit?: string | undefined
+}
+
+/**
+ * Read the build identity a portable installation carries beside its executable.
+ *
+ * The window shows it so a user can tell which DSH-Go build is running without
+ * opening a terminal, and a bug report can quote one string instead of a path.
+ * @param directory - directory holding the executable and `BUILD-INFO.txt`.
+ * @returns the recorded fields; empty when the file is absent or unreadable.
+ */
+export function readPortableBuild(directory: string): PortableBuild {
+  try {
+    const text = readFileSync(join(directory, 'BUILD-INFO.txt'), 'utf8')
+    const field = (name: string): string | undefined => {
+      const match = new RegExp(`^${name}:\\s*(.+)$`, 'm').exec(text)
+      const value = match?.[1]?.trim()
+      return value === undefined || value.length === 0 ? undefined : value
+    }
+    return { version: field('version'), commit: field('commit') }
+  } catch (_error: unknown) {
+    // A hand-assembled directory has no build file; the window then shows the runtime version alone.
+    return {}
+  }
+}
+
 /**
  * Host console captures kept beside the executable; older files are pruned at launch.
  */

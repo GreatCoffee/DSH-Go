@@ -253,6 +253,17 @@ describe('current version', () => {
     expect(screen.queryByRole('button')).toBeNull()
   })
 
+  it('names the portable source commit beside the release version', () => {
+    vi.stubEnv('DSH_CLIENT_VERSION', '0.2.2-rc.1')
+    const translate: TriggerContentProps['t'] = (key, params) => {
+      let text = (en as Record<string, string>)[key] ?? key
+      for (const [name, value] of Object.entries(params ?? {})) text = text.replace(`{${name}}`, String(value))
+      return text
+    }
+    render(<CurrentVersionRow {...kit} t={translate} build='2f292ba37d' />)
+    expect(screen.getByText('Current version: 0.2.2-rc.1 (DSH-Go 2f292ba37d)')).toBeTruthy()
+  })
+
   it('omits the row when a partial build has no version metadata', () => {
     vi.stubEnv('DSH_CLIENT_VERSION', undefined)
     const view = render(<CurrentVersionRow {...kit} t={t} />)

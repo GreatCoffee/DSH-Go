@@ -8,7 +8,7 @@ vi.mock('electron', () => ({ app: { setPath: (name: string, value: string) => { 
 
 const {
   applyPortableEnvironment, ensurePortableLayout, installPortableLogging, isNetworkLocation, portableDisabled,
-  readPortableState, resolvePortableLayout,
+  readPortableBuild, readPortableState, resolvePortableLayout,
 } = await import('../src/portable.ts')
 
 const roots: string[] = []
@@ -114,4 +114,18 @@ it('mirrors console output into a dated host log and restores the stream', async
     'workspace: releasing session \u001B[33mheld\u001B[0m failed\n',
     'after dispose\n',
   ])
+})
+
+it('reads the build identity written beside the executable', async () => {
+  const root = await directory()
+  await writeFile(join(root, 'BUILD-INFO.txt'), [
+    'version: 0.2.2-rc.1',
+    'commit: 2f292ba37d',
+    'built: 2026-11-07T12:13:12.0000000+08:00',
+    'runtime: win32-x64 (unsigned directory build)',
+    '',
+  ].join('\n'), 'utf8')
+  expect(readPortableBuild(root)).toEqual({ version: '0.2.2-rc.1', commit: '2f292ba37d' })
+  // A hand-assembled directory carries no build file; the version label then names the runtime alone.
+  expect(readPortableBuild(join(root, 'missing'))).toEqual({})
 })

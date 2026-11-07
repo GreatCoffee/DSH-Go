@@ -75,6 +75,8 @@ It works only on click and never scans at startup — the longer the installatio
 
 The portable build cannot be overwritten by the installer (that would move the directory into Program Files), so the official mandatory update check is disabled; the unpacked auto-update configuration was never part of the unsigned directory build anyway.
 
+Portable builds hide the entries that belong to the official distribution: **Application → Check for Updates…**, the **Feedback** item in the sidebar account menu, and the **Update channel** row under Settings → General. The version label at the bottom of that page becomes the upstream version plus the DSH-Go source commit, for example `0.2.2-rc.1 (DSH-Go 2f292ba37d)`, which is the `commit` line of `BUILD-INFO.txt` beside the executable.
+
 An upgrade replaces the program files and keeps `portable\`. For source-level updates (following the official repository), see [SYNC.md](SYNC.md); for the build method, see [BUILD.md](BUILD.md).
 
 ## Updating itself

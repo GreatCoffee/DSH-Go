@@ -13,6 +13,16 @@ import { installMandatoryUpdateOverlay } from './preload-mandatory-overlay.ts'
 import { createDesktopBrowserBridge } from './preload-browser.ts'
 import type { FileDragHandle } from '@deepseek-ai/dsh-util-file-drag'
 
+/** Argument the main process appends for a portable build; absent in the vendor build and in development. */
+const PORTABLE_ARGUMENT = '--dsh-go-portable='
+/**
+ * Source commit of the running DSH-Go build, read from the argument the main
+ * process derives from `BUILD-INFO.txt`. A portable install updates through its
+ * own GitHub release, so the renderer shows this instead of a vendor channel.
+ */
+const portableBuild: string | undefined =
+  process.argv.find(argument => argument.startsWith(PORTABLE_ARGUMENT))?.slice(PORTABLE_ARGUMENT.length)
+
 function createProductApi(): DshDesktopProductApi {
   return {
     protocolVersion: 1,
@@ -65,24 +75,30 @@ function createProductApi(): DshDesktopProductApi {
         return () => { ipcRenderer.off(DESKTOP_IPC.shortcutsChanged, handle) }
       },
     },
-    updates: {
-      channels: {
-        get: () => ipcRenderer.invoke(DESKTOP_IPC.updatesChannelGet) as Promise<DesktopChannelState>,
-        set: channel => ipcRenderer.invoke(DESKTOP_IPC.updatesChannelSet, channel) as Promise<DesktopChannelChangeResult>,
-        subscribe(listener) {
-          const handle = (_event: Electron.IpcRendererEvent, state: DesktopChannelState): void => { listener(state) }
-          ipcRenderer.on(DESKTOP_IPC.updatesChannelChanged, handle)
-          return () => { ipcRenderer.off(DESKTOP_IPC.updatesChannelChanged, handle) }
-        },
-      },
-      status: () => ipcRenderer.invoke(DESKTOP_IPC.updatesStatus) as Promise<DesktopUpdatePresentation>,
-      open: () => ipcRenderer.invoke(DESKTOP_IPC.updatesOpen) as Promise<void>,
-      subscribe(listener) {
-        const handle = (_event: Electron.IpcRendererEvent, state: DesktopUpdatePresentation): void => { listener(state) }
-        ipcRenderer.on(DESKTOP_IPC.updatesPresentation, handle)
-        return () => { ipcRenderer.off(DESKTOP_IPC.updatesPresentation, handle) }
-      },
-    },
+    // A portable build has no packaged update feed, so the bridge is left out: the settings view then drops its
+    // channel row and no update dialog can be opened.
+    ...(portableBuild === undefined
+      ? {
+          updates: {
+            channels: {
+              get: () => ipcRenderer.invoke(DESKTOP_IPC.updatesChannelGet) as Promise<DesktopChannelState>,
+              set: channel => ipcRenderer.invoke(DESKTOP_IPC.updatesChannelSet, channel) as Promise<DesktopChannelChangeResult>,
+              subscribe(listener) {
+                const handle = (_event: Electron.IpcRendererEvent, state: DesktopChannelState): void => { listener(state) }
+                ipcRenderer.on(DESKTOP_IPC.updatesChannelChanged, handle)
+                return () => { ipcRenderer.off(DESKTOP_IPC.updatesChannelChanged, handle) }
+              },
+            },
+            status: () => ipcRenderer.invoke(DESKTOP_IPC.updatesStatus) as Promise<DesktopUpdatePresentation>,
+            open: () => ipcRenderer.invoke(DESKTOP_IPC.updatesOpen) as Promise<void>,
+            subscribe(listener) {
+              const handle = (_event: Electron.IpcRendererEvent, state: DesktopUpdatePresentation): void => { listener(state) }
+              ipcRenderer.on(DESKTOP_IPC.updatesPresentation, handle)
+              return () => { ipcRenderer.off(DESKTOP_IPC.updatesPresentation, handle) }
+            },
+          },
+        }
+      : { goPortable: { build: portableBuild } }),
   }
 }
 

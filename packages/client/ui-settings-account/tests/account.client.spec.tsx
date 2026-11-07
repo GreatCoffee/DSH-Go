@@ -122,6 +122,21 @@ it('starts sign-in and disables cancellation during persistence', async () => {
   expect(screen.queryByRole('button', { name: en.signIn })).toBeNull()
 })
 
+it('omits the vendor feedback entry when the surface does not inject it', async () => {
+  const operations = mount({ status: 'credential-stored', attempt: null })
+  cleanup()
+  const { AccountMenu } = await import('../src/client/AccountMenu.tsx')
+  // A portable DSH-Go build injects no `contactUs`, so the entry disappears rather than opening a vendor form.
+  const { contactUs: _omitted, ...injected } = operations
+  render(<AccountMenu {...({} as GlobalStandardProps)} {...injected} settingsOpen={false} signOut={() => Promise.resolve()}
+    hasRunningAccountTasks={async () => false}
+    useAccount={selector => selector(operations.hooks.account.getSnapshot())}
+    useTheme={selector => selector(operations.hooks.theme.getSnapshot())} wide openOnboarding={() => {}} openSettings={() => {}}
+    t={key => en[key as AccountKey]} />)
+  fireEvent.click(screen.getByRole('button', { name: en.menu }))
+  expect(screen.getAllByRole('menuitem').map(item => item.textContent)).toEqual([en.settings, en.signOut])
+})
+
 it.each([en, zh].flatMap(copy => ([false, true, 'unknown'] as const).map(running => ({ copy, running }))))('confirms sidebar sign-out with task impact $running', async ({ copy, running }) => {
   const signOut = vi.fn(() => Promise.resolve())
   const openSettings = vi.fn()

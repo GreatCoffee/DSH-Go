@@ -8,7 +8,7 @@ import { isDesktopUpdateChannel } from './settings-file.ts'
 import type { ProductEventMap, ProductEvent } from '@deepseek-ai/dsh-client-product-analytics/types'
 import { WINDOWS_TITLEBAR_HEIGHT } from './windows-layout.ts'
 import { access, readFile, writeFile } from 'node:fs/promises'
-import { join } from 'node:path'
+import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import {
   app,
@@ -72,8 +72,8 @@ import { DesktopQuitConfirmation } from './quit-confirmation.ts'
 import { DesktopTray } from './tray.ts'
 import { DesktopBackgroundNotice } from './background-notice.ts'
 import {
-  applyPortableEnvironment, ensurePortableLayout, installPortableLogging, portableDisabled, readPortableState,
-  resolvePortableLayout, writePortableState, type PortableLayout,
+  applyPortableEnvironment, ensurePortableLayout, installPortableLogging, portableDisabled, readPortableBuild,
+  readPortableState, resolvePortableLayout, writePortableState, type PortableLayout,
 } from './portable.ts'
 import { rebasePortableData, type PortableRebaseSummary } from './portable-rebase.ts'
 
@@ -96,6 +96,15 @@ const portableLayout: PortableLayout | undefined = app.isPackaged && !portableDi
 let portableDataWasMissing = false
 /** Restores the console streams and closes `portable/logs/host-<date>.log` at exit. */
 let portableLogging: (() => void) | undefined
+/**
+ * Source identity of a portable build, read from `BUILD-INFO.txt` beside the
+ * executable. The window shows it so the running DSH-Go build is identifiable
+ * without a terminal, and the renderer hides the vendor update surface because
+ * DSH-Go updates through its own GitHub release.
+ */
+const portableBuild: string | undefined = portableLayout === undefined
+  ? undefined
+  : readPortableBuild(dirname(app.getPath('exe'))).commit
 if (portableLayout !== undefined) {
   portableDataWasMissing = ensurePortableLayout(portableLayout)
   applyPortableEnvironment(portableLayout)
@@ -314,6 +323,8 @@ function createWindow(preload: string, show = false, primary = false): BrowserWi
       webSecurity: true,
       webviewTag: primary,
       devTools: true,
+      // A portable build has no packaged update feed; the renderer reads this to hide the update surface.
+      ...(portableBuild === undefined ? {} : { additionalArguments: [`--dsh-go-portable=${portableBuild}`] }),
     },
   })
   window.webContents.setWindowOpenHandler(({ url }) => {
@@ -1246,7 +1257,10 @@ async function main(): Promise<void> {
         click: () => { void showAbout().catch((error: unknown) => { console.error(error) }) } }
       : { label: currentDesktopLocale().messages.aboutMenu, role: 'about' },
     { type: 'separator' },
-    { label: currentDesktopLocale().messages.checkUpdatesMenu, click: () => { void openUpdatePrompt(true) } },
+    // DSH-Go updates through its own GitHub release, so a vendor feed check would fail for the user.
+    ...portableLayout === undefined
+      ? [{ label: currentDesktopLocale().messages.checkUpdatesMenu, click: () => { void openUpdatePrompt(true) } }]
+      : [],
     ...process.platform === 'darwin' || process.platform === 'win32'
       ? [{ label: currentDesktopLocale().messages.cliCommandMenu, click: () => { void commandManager.show() } }] : [],
     { type: 'separator' },

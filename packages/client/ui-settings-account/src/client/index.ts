@@ -194,41 +194,48 @@ export function apply(ctx: Context): void {
       onClose(reason)
       if (reason === 'returned' && page === 'top-up') void refreshAfterReturn(refreshing, reRead)
     })
+  const portable = (globalThis as typeof globalThis & { dshDesktop?: { goPortable?: unknown } }).dshDesktop?.goPortable !== undefined
+  /**
+   * Open the vendor feedback questionnaire. Absent from a portable DSH-Go build, which reports
+   * defects to its own repository instead.
+   */
+  const contactUs = (): void => {
+    // Sample the account, build and environment before awaiting native information, so
+    // a profile the read outlasts cannot replace the UID this click reported.
+    const profile = snapshot.details?.profile
+    const context = {
+      uid: profile?.status === 'ready' ? profile.value.id : null,
+      version: process.env.DSH_CLIENT_VERSION,
+      width: window.screen.width, height: window.screen.height, pixelRatio: window.devicePixelRatio,
+    }
+    const openForm = (deviceInfo: string): void => {
+      window.open(contactUrl(config, { ...context, deviceInfo }), '_blank', 'noopener,noreferrer')
+    }
+    const readDeviceInfo = (globalThis as typeof globalThis & {
+      dshDesktop?: { deviceInfo?: () => Promise<string> }
+    }).dshDesktop?.deviceInfo
+    if (readDeviceInfo === undefined) {
+      // A plain browser, or a Desktop bridge without the optional reader, reports the renderer user agent.
+      openForm(navigator.userAgent)
+      return
+    }
+    void (async () => {
+      let deviceInfo = ''
+      try { deviceInfo = await readDeviceInfo() }
+      catch (_error) {
+        // Native information is optional; the questionnaire opens without it.
+      }
+      openForm(deviceInfo)
+    })()
+  }
   const operations: AccountSectionInjected = {
     avatarFailed: (value) => { avatar.failed(value) },
     subscribeSessionExpired: listener => ctx.remote.$on('deepseek-account/session-expired', listener),
     subscribeModelSignInRequired: listener => ctx.remote.$on('deepseek-account/model-sign-in-required', listener),
     ...nativePlatform === undefined ? {} : { openPlatformPage: platformPageOpener(refreshAccount) },
     refreshAccount,
-    contactUs() {
-      // Sample the account, build and environment before awaiting native information, so
-      // a profile the read outlasts cannot replace the UID this click reported.
-      const profile = snapshot.details?.profile
-      const context = {
-        uid: profile?.status === 'ready' ? profile.value.id : null,
-        version: process.env.DSH_CLIENT_VERSION,
-        width: window.screen.width, height: window.screen.height, pixelRatio: window.devicePixelRatio,
-      }
-      const openForm = (deviceInfo: string): void => {
-        window.open(contactUrl(config, { ...context, deviceInfo }), '_blank', 'noopener,noreferrer')
-      }
-      const readDeviceInfo = (globalThis as typeof globalThis & {
-        dshDesktop?: { deviceInfo?: () => Promise<string> }
-      }).dshDesktop?.deviceInfo
-      if (readDeviceInfo === undefined) {
-        // A plain browser, or a Desktop bridge without the optional reader, reports the renderer user agent.
-        openForm(navigator.userAgent)
-        return
-      }
-      void (async () => {
-        let deviceInfo = ''
-        try { deviceInfo = await readDeviceInfo() }
-        catch (_error) {
-          // Native information is optional; the questionnaire opens without it.
-        }
-        openForm(deviceInfo)
-      })()
-    },
+    // A portable build replaces the vendor questionnaire with this project's own issue tracker.
+    ...(portable ? {} : { contactUs }),
     showLogin(visible) { publish({ ...snapshot, loginVisible: visible }) },
     setOnboarding(active) { publish({ ...snapshot, onboarding: active }) },
     bonusNoticeShown(orderId) { notices.shown(orderId) },

@@ -138,6 +138,7 @@ pwsh scripts/build-portable.ps1          # 在短路径副本里
 | 插件状态目录随包移动 | 已完成（XDG 三变量，发布 `go-1869e914bd`） |
 | 删除会话（自带 bundle `@deepseek-ai/dsh-go-session-delete`） | 已实现并本地通过测试；在插件管理器里作为「随安装包提供」的可选 bundle 可见、可关闭（内置 bundle 不支持卸载）；删除前先 `workspace/session-stop` 停掉在跑的任务、再 `workspace/session-close` 释放活会话，删后发 `session/deleted` 清投影缓存——刚聊过且仍在运行的会话无需重启即可删；尚未打包发布 |
 | 维护页（自带 bundle `@deepseek-ai/dsh-go-maintenance`） | 已实现并本地通过测试：设置页「维护」分区按需扫描/清理三类残留（无工作区引用的投影检查点、无工作区引用的日志目录、无日志引用的图片附件），全部按需、不随启动扫描；存活按工作区判定（`sessionIds` + 归档 + 置顶），一个工作区都没引用时报空；删目录前查 `workspace/session-activity`；每次清理往宿主日志写一行 `[dsh-go-maintenance]` 审计记录（`ctx.logger` 不进 tee，故用 `console`）；依赖 `SessionPersistence.root` 与投影缓存服务新增的 `orphanIds`/`pruneOrphans`；尚未打包发布 |
+| 隐藏官方发行入口 | 已完成并本地通过类型检查/测试：标题栏「应用 → 检查更新…」在便携版不显示（`main.ts` 的 `applicationItems`）、账号菜单「意见反馈」不注入（`ui-settings-account` 的 `contactUs` 变为可选，便携版不提供）、设置→通用「更新渠道」随 preload 不暴露 `updates` 通道而自动消失（`DshDesktopProductApi.updates` 改为可选）、版本号显示为 `原版版本号（DSH-Go <commit>）`（`readPortableBuild` 读 `BUILD-INFO.txt`，经 `--dsh-go-portable=` 传给 preload 的 `goPortable.build`）；尚未打包发布 |
 | 便携版宿主日志 | 已完成：`portable\logs\host-<日期>.log` 镜像 stdout/stderr（去 ANSI），保留最近 7 个；`apps/desktop/src/portable.ts` 的 `installPortableLogging` |
 | 升级后插件保留 | 已完成（真实发布包演练） |
 | macOS 便携 | 挂起（需 Mac 构建） |

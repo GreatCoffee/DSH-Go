@@ -67,8 +67,11 @@ export interface AccountSectionInjected {
    * @returns after the account queries settle; image loading completes independently.
    */
   refreshAccount: () => Promise<void>
-  /** Open the external support questionnaire with the account, build and environment sampled by this click. */
-  contactUs: () => void
+  /**
+   * Open the external support questionnaire with the account, build and environment sampled by this click.
+   * Absent in a portable DSH-Go build, which reports defects to its own repository.
+   */
+  contactUs?: () => void
   /** Open or dismiss the login dialog. */
   showLogin: (visible: boolean) => void
   /** Claim dialog ownership for the onboarding step. */

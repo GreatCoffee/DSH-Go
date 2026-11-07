@@ -102,11 +102,19 @@ export interface DshDesktopProductApi {
    * @returns `name=value` fields separated by `; `, with no hostname, user name, or serial number.
    */
   deviceInfo(): Promise<string>
-  readonly updates: {
+  /**
+   * Vendor update channel and dialogs. Absent in a portable DSH-Go build, which
+   * updates through its own GitHub release instead of a packaged feed.
+   */
+  readonly updates?: {
     readonly channels: DesktopChannelBridge
     status(): Promise<DesktopUpdatePresentation>
     open(): Promise<void>
     subscribe(listener: (state: DesktopUpdatePresentation) => void): () => void
+  }
+  /** Present only in a portable DSH-Go build; identifies the source commit shown beside the version. */
+  readonly goPortable?: {
+    readonly build: string
   }
 }
 

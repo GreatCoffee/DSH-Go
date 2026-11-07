@@ -17,6 +17,17 @@ English | [中文](README.zh.md)
 > - Portable build guide: [docs/portable/README.md](docs/portable/README.md) · Build: [docs/portable/BUILD.md](docs/portable/BUILD.md) · Upstream sync: [docs/portable/SYNC.md](docs/portable/SYNC.md)
 > - Build with `pwsh scripts/build-portable.ps1`; follow upstream with `pwsh scripts/sync-upstream.ps1`; update an installation with `pwsh scripts/update-portable.ps1`.
 
+## What DSH-Go adds
+
+- **Portable data.** Sessions, settings, installed plugins, logs, and the default workspace live under `portable\` beside the executable. Move the whole directory to another path, drive, or machine and double-click `DeepSeek Harness.exe`; startup rewrites the recorded paths so the previous state comes back.
+- **Self-update.** `Update-DSH-Go.cmd` resolves the newest `go-<commit>` release, verifies its SHA-256, and replaces the program files while leaving `portable\` untouched.
+- **Delete a Session.** The row's ⋯ menu gains 删除会话 below 归档会话: after a confirmation dialog it stops the Session's running work, then permanently removes its log, registry entry, and grouping traces.
+- **Storage maintenance.** Settings → 数据维护 scans and clears what no workspace references any more: checkpoint records, orphan Session logs, and attachments no surviving log mentions.
+- **Host log.** `portable\logs\host-<UTC date>.log` records startup, plugin failures, and maintenance clears; the newest seven files are kept.
+- **No vendor update path.** The portable build hides 检查更新, 意见反馈, and 更新渠道, and shows the version as `0.2.2-rc.1 (DSH-Go <commit>)`.
+
+Install by unzipping `DSH-Go-<commit>-win-x64-portable.zip` from [Releases](https://github.com/GreatCoffee/DSH-Go/releases) and running `DeepSeek Harness.exe`. The archive carries an empty `portable\` skeleton; keep your own `portable\` when replacing program files with a newer build.
+
 DeepSeek Harness (`dsh`) is an open-source agent harness developed by [DeepSeek AI](https://deepseek.com).
 
 It is built on an **everything-is-a-plugin** architecture and powered by [Cordis](https://github.com/cordiverse/cordis), whose design is described in [_A Programming Paradigm for Spatiotemporal Composability_](https://arxiv.org/abs/2608.25512).
@@ -57,7 +68,9 @@ pnpm dsh web
 
 ## Community and support
 
-- Submit feedback or bug reports through [GitHub Discussions](https://github.com/deepseek-ai/deepseek-harness/discussions).
+This fork has no community channel of its own: report DSH-Go problems at [GreatCoffee/DSH-Go issues](https://github.com/GreatCoffee/DSH-Go/issues). Everything below belongs to the upstream DeepSeek Harness project, and upstream cannot answer questions about this build.
+
+- Upstream [GitHub Discussions](https://github.com/deepseek-ai/deepseek-harness/discussions) for the harness itself.
 - Add the [`dsh-plugin`](https://github.com/topics/dsh-plugin) topic to your plugin repository for discoverability.
 - Join <a href="https://discord.gg/4MrtZUhpxg">DeepSeek Harness Discord community</a>.
 

@@ -17,6 +17,17 @@
 > - 便携版说明：[docs/portable/README.zh.md](docs/portable/README.zh.md) · 自行构建：[docs/portable/BUILD.zh.md](docs/portable/BUILD.zh.md) · 跟进上游：[docs/portable/SYNC.zh.md](docs/portable/SYNC.zh.md)
 > - 构建：`pwsh scripts/build-portable.ps1`；同步上游：`pwsh scripts/sync-upstream.ps1`；更新已安装的便携版：`pwsh scripts/update-portable.ps1`
 
+## DSH-Go 提供了什么
+
+- **数据随身携带。** 会话、设置、已安装插件、日志与默认工作区都在程序旁边的 `portable\` 里。整个目录搬到别的路径、别的盘、别的机器（或 NAS），双击 `DeepSeek Harness.exe` 即可；启动时会重写记录下来的路径，恢复到上次的状态。
+- **自更新。** `Update-DSH-Go.cmd` 找到最新的 `go-<commit>` 发布，校验 SHA-256 后只替换程序文件，不碰 `portable\`。
+- **删除会话。** 会话行的 ⋯ 菜单在「归档会话」下方提供「删除会话」：经二次确认后先停止该会话正在运行的任务，再永久删除它的日志、注册表记录与分组痕迹。
+- **数据维护。** 设置 → 数据维护 扫描并清理已无工作区引用的残留：孤立检查点记录、孤立的会话日志、以及没有任何存活日志引用的附件。
+- **主机日志。** `portable\logs\host-<UTC 日期>.log` 记录启动、插件加载失败与维护清理，保留最新 7 个文件。
+- **没有厂商更新通道。** 便携版隐藏「检查更新」「意见反馈」「更新渠道」，版本号显示为 `0.2.2-rc.1 (DSH-Go <commit>)`。
+
+安装：从 [Releases](https://github.com/GreatCoffee/DSH-Go/releases) 下载 `DSH-Go-<commit>-win-x64-portable.zip`，解压后运行 `DeepSeek Harness.exe`。压缩包内只有空的 `portable\` 骨架；用新构建替换程序文件时保留你自己的 `portable\`。
+
 DeepSeek Harness（`dsh`）是由 [DeepSeek AI](https://deepseek.com) 开发的开源 agent harness（智能体框架）。
 
 它构建于**一切皆插件**的架构之上，由 [Cordis](https://github.com/cordiverse/cordis) 驱动，其设计参见论文 [_A Programming Paradigm for Spatiotemporal Composability_](https://arxiv.org/abs/2608.25512)。
@@ -61,7 +72,9 @@ pnpm dsh web
 
 ## 社区与支持
 
-- 通过 [GitHub Discussions](https://github.com/deepseek-ai/deepseek-harness/discussions) 提交反馈或 bug 报告。
+本分支没有自己的社区渠道：DSH-Go 的问题请提交到 [GreatCoffee/DSH-Go issues](https://github.com/GreatCoffee/DSH-Go/issues)。以下内容都属于上游 DeepSeek Harness 项目，上游无法回答与本构建相关的问题。
+
+- 上游 [GitHub Discussions](https://github.com/deepseek-ai/deepseek-harness/discussions)：讨论 harness 本身。
 - 为你的插件仓库添加 [`dsh-plugin`](https://github.com/topics/dsh-plugin) 话题，便于被发现。
 - 欢迎加入 DeepSeek Harness 企微群！扫描下方二维码填写入群问卷，小助手会定期发送入群邀请。
 

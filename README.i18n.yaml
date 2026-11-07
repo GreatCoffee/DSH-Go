@@ -3,8 +3,11 @@
 # After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write README.md
 /dsh-go:
-  en: f5412eebd6393f2d
-  zh: 513c91aee83fa80e
+  en: 9e8b7c52f20d24c8
+  zh: 1cbf42e771a10517
+/dsh-go/what-dsh-go-adds:
+  en: 2d773095a19e5d42
+  zh: 30fd5b26dfad7e5a
 /dsh-go/developer-preview:
   en: 4ef4d8a71ac143f0
   zh: 1bfc3149ba8e5543
@@ -18,8 +21,8 @@
   en: 819e3f7c144d0d64
   zh: de815f040975dba7
 /dsh-go/community-and-support:
-  en: 20acf6451fdc869b
-  zh: d06246dd019ecef7
+  en: 785892454a87a558
+  zh: c4476c8d057d3b8a
 /dsh-go/contributing:
   en: cabc2d3e9f8898bd
   zh: 83b6d238bae29ce3

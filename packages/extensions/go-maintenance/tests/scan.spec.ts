@@ -7,7 +7,14 @@ import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
-import { collectDigests, collectLogDigests, directoryBytes, orphanDirectories, orphanObjects } from '../src/scan.ts'
+import {
+  collectDigests,
+  collectLogDigests,
+  directoryBytes,
+  hasReferences,
+  orphanDirectories,
+  orphanObjects,
+} from '../src/scan.ts'
 
 let root: string
 
@@ -48,6 +55,13 @@ describe('orphan session directories', () => {
 
   it('reports nothing when the root does not exist', async () => {
     expect(await orphanDirectories(join(root, 'missing'), new Set())).toEqual([])
+  })
+})
+
+describe('liveness guard', () => {
+  it('reports nothing until a workspace references a session', () => {
+    expect(hasReferences(new Set())).toBe(false)
+    expect(hasReferences(new Set(['session-e8be852c']))).toBe(true)
   })
 })
 

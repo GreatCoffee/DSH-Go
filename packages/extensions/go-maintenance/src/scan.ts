@@ -21,6 +21,14 @@ export interface ScannedFile {
   readonly path: string
   /** Size in bytes at scan time. */
   readonly bytes: number
+  /**
+   * Session id the artifact belongs to, when it names one.
+   *
+   * Cleaning a directory checks this id for running work before removing it,
+   * so a Session no workspace lists but a background job still writes to is
+   * never pulled out from under that job.
+   */
+  readonly id?: string
 }
 
 /**
@@ -36,7 +44,7 @@ export async function orphanDirectories(root: string, names: ReadonlySet<string>
       const name = basename(directory)
       const id = name.startsWith(SESSION_DIRECTORY_PREFIX) ? name.slice(SESSION_DIRECTORY_PREFIX.length) : name
       if (names.has(id) || names.has(SESSION_DIRECTORY_PREFIX + id)) continue
-      orphans.push({ path: directory, bytes: await directoryBytes(directory) })
+      orphans.push({ path: directory, bytes: await directoryBytes(directory), id })
     }
   }
   return orphans
@@ -157,4 +165,17 @@ export async function directoryBytes(directory: string): Promise<number> {
     total += entry.isDirectory() ? await directoryBytes(path) : await fileSize(path)
   }
   return total
+}
+
+/**
+ * Whether a survey may call anything an orphan.
+ *
+ * An installation whose workspaces reference nothing is far more likely to be
+ * one whose registry has not loaded than one with an entire installation of
+ * residue, so the answer is "report nothing" rather than "clear everything".
+ * @param references - sessions some workspace still owns.
+ * @returns `true` when at least one workspace still references a Session.
+ */
+export function hasReferences(references: ReadonlySet<unknown>): boolean {
+  return references.size > 0
 }

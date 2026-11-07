@@ -62,9 +62,11 @@ Host capabilities (`workspace.deleteSession` and `SessionPersistence.delete`) ar
 
 ## Maintenance (cleaning up leftovers)
 
-The settings page has a **Maintenance** section, provided by the built-in bundle `@deepseek-ai/dsh-go-maintenance`. Clicking **Scan** lists three kinds of leftovers: projection-cache checkpoints that no session points to, log directories that no session header points to, and image attachments that no log references; you can clean up one kind at a time or all at once, and it rescans automatically after cleaning.
+The settings page has a **Maintenance** section, provided by the built-in bundle `@deepseek-ai/dsh-go-maintenance`. Clicking **Scan** lists three kinds of leftovers: projection-cache checkpoints that no workspace references, log directories that no workspace references, and image attachments that no log references; you can clean up one kind at a time or all at once, and it rescans automatically after cleaning.
 
-It works only on click and never scans at startup — the longer the installation lives, the slower a startup scan would be. Anything it cannot judge is left untouched: when one session log cannot be read, no attachment is cleaned up this run; when the persistence backend keeps no directory, no orphan directory is reported either. The cost ledger keeps the billing history of deleted sessions and is not part of this.
+"Alive" is decided by workspaces: every workspace's sessions, plus the archived and pinned sets. A session whose log still sits on disk but that no workspace owns is residue — exactly the directories earlier builds left behind when a Session was deleted, invisible in the UI and impossible to remove there. When no workspace references anything at all, the scan reports nothing rather than calling the whole installation residue. Before a Session directory is removed, the Host also confirms no work is still running on it.
+
+It works only on click and never scans at startup — the longer the installation lives, the slower a startup scan would be. Anything it cannot judge is left untouched: when one session log cannot be read, no attachment is cleaned up this run; when the persistence backend keeps no directory, no orphan directory is reported either. Every clean writes one audit line into the Host log under `logs\`. The cost ledger keeps the billing history of deleted sessions and is not part of this.
 ## Credentials
 
 `portable\dsh-home\.credentials.yaml` is plaintext and moves with the directory, so a new machine needs no new login. Delete it before sharing, uploading, or committing.

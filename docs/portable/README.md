@@ -71,6 +71,12 @@ It works only on click and never scans at startup — the longer the installatio
 
 `portable\dsh-home\.credentials.yaml` is plaintext and moves with the directory, so a new machine needs no new login. Delete it before sharing, uploading, or committing.
 
+## Turning off the quote button
+
+Selecting text in a session raises a **Quote text** button; clicking it inserts the selection into the composer as a quote. The button comes from DSH's own `@deepseek-ai/dsh-message-quotes` plugin, which registers it unconditionally, and it has no dedicated setting — but the plugin manager can switch it off natively: open the plugin list, expand the `@deepseek-ai/dsh-web-app` bundle, and turn off its `message-quotes` row. DSH writes `disabled: true` for that row into the profile's `cordis.patch.yml` and reloads, so the choice survives restarts and upgrades (which keep `portable\\`).
+
+The switch works at plugin granularity: with it off, the button, quote insertion, and the quote rendering of messages that already contain quotes all disappear, and those old quotes fall back to plain Markdown blockquotes. Turn the row back on to restore all of it.
+
 ## Official auto-update disabled
 
 The portable build cannot be overwritten by the installer (that would move the directory into Program Files), so the official mandatory update check is disabled; the unpacked auto-update configuration was never part of the unsigned directory build anyway.

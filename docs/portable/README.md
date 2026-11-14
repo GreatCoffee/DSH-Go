@@ -85,6 +85,14 @@ Portable builds hide the entries that belong to the official distribution: **App
 
 An upgrade replaces the program files and keeps `portable\`. For source-level updates (following the official repository), see [SYNC.md](SYNC.md); for the build method, see [BUILD.md](BUILD.md).
 
+## GitHub Actions in this mirror
+
+GitHub Actions is disabled at repository level (Settings → Actions → General → Disable actions), so no workflow starts here, and the usage chart stays flat. That is deliberate: the mirror carries upstream's 32 workflow files, and a fresh repository starts all of them as soon as it receives its first push.
+
+On 2026-11-05 the creation push, plus the 24 dependency pull requests that the inherited `dependabot.yml` opened, produced 229 workflow runs inside 87 minutes. The billing dashboard's `$13.73` is the gross list price of those minutes; `Billed` stayed at `$0.00` because that usage was discounted in full. Dependabot version updates were removed in `89eb9e5021`, and the Actions switch was turned off afterwards.
+
+The workflow files stay in place even though they never run: `scripts/*.spec.ts` read them and the documentation links them, so deleting them would fail `pnpm test` and the link check. Keep Actions off. If a workflow is ever wanted again, trim `.github/workflows` to the single file first — the release, packaging, and real-API lanes are the expensive ones, and the governance lanes (`issue-lifecycle`, the three `Policy` workflows, `weighted-approval`) only serve the upstream repository — then re-enable.
+
 ## Updating itself
 
 The program directory contains `Update-DSH-Go.ps1`; double-click it or run it in PowerShell:

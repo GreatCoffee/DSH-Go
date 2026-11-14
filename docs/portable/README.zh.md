@@ -85,6 +85,14 @@ DSH-Go 在会话行的 `⋯` 菜单里多了一行**删除会话**，位于**归
 
 升级方式是替换程序文件、保留 `portable\`。源码级的更新（跟进官方仓库）见 [SYNC.zh.md](SYNC.zh.md)，构建方法见 [BUILD.zh.md](BUILD.zh.md)。
 
+## 本镜像的 GitHub Actions
+
+本仓库在仓库级关闭了 GitHub Actions（设置 → Actions → General → Disable actions），所以不会有任何 workflow 启动，用量曲线保持平直。这是有意为之：镜像带着上游的 32 个 workflow 文件，而一个刚建好的仓库只要收到第一次 push，它们就会全部启动。
+
+2026-11-05 那次建库 push，加上继承来的 `dependabot.yml` 一次开出的 24 个依赖升级 PR，在 87 分钟里产生了 229 次 workflow 运行。账单面板上的 `$13.73` 是这些分钟的标价，`Billed` 始终是 `$0.00`，因为这笔用量被全额抵扣了。Dependabot 的版本更新已在 `89eb9e5021` 移除，之后 Actions 开关也被关掉。
+
+这些 workflow 文件即使从不运行也保留在原处：`scripts/*.spec.ts` 会读取它们，文档也链接它们，删掉会让 `pnpm test` 和链接检查失败。请保持 Actions 关闭。将来若确实需要某个 workflow，先把 `.github/workflows` 裁到只剩那一个文件——发布、打包和真实 API 这几条最贵，而治理类（`issue-lifecycle`、三个 `Policy`、`weighted-approval`）只服务于上游仓库——再重新启用。
+
 ## 更新自己
 
 程序目录里有 `Update-DSH-Go.ps1`，双击或用 PowerShell 运行即可：

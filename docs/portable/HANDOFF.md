@@ -15,7 +15,7 @@ No single wait, timeout, or blocking call may exceed 180 seconds, and progress m
 | Upstream | `deepseek-ai/deepseek-harness` (MIT), current baseline commit `4b399c39a6` (`dsh-v0.2.3-alpha.2`, which is also `upstream/master`), product version `0.2.3-alpha.2` |
 | This repository | `GreatCoffee/DSH-Go` (public), `master` |
 | Latest build commit | `81cdd50973` (portable builds skip the vendor mandatory-update overlay; the previous build `bd921f539f` adapted the fork extensions to the 0.2.3-alpha.2 release gates) |
-| Latest release | `https://github.com/GreatCoffee/DSH-Go/releases/tag/go-62d166c770` — that release predates this upstream sync; nothing newer has been published yet |
+| Latest release | `https://github.com/GreatCoffee/DSH-Go/releases/tag/go-81cdd50973` — the 0.2.3-alpha.2 build; the asset is `DSH-Go-81cdd50973-win-x64-portable.zip` (416 MB) with a `.sha256` beside it |
 | Install directory | `D:\Documents\Softwares\DSH-Go` |
 | Active workspace | `D:\Documents\Softwares\DSH-Go\portable\workspace\DSH-Portable` (the repository is in `...\dsh-go`) |
 | Installed plugins | `billion-context@0.1.216`, `dsh-connect-workbuddy@5.31.2`, `dsh-context@0.87.1`, `dsh-cost-meter@^1.9.57`, `dsh-gitbash-shell@0.55.1`, `dsh-ui-scale@^0.1.5` (all enabled in profile bundles; `dsh-ops` is gone) |

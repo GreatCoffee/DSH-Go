@@ -15,7 +15,7 @@
 | 上游 | `deepseek-ai/deepseek-harness`（MIT），当前基线提交 `4b399c39a6`（即 `dsh-v0.2.3-alpha.2`，同时是 `upstream/master`），产品版本 `0.2.3-alpha.2` |
 | 本仓库 | `GreatCoffee/DSH-Go`（公开），`master` |
 | 最近构建提交 | `81cdd50973`（便携版跳过厂商强制更新浮层；上一版 `bd921f539f` 把 fork 自带扩展适配到 0.2.3-alpha.2 的发布门禁） |
-| 最近发布 | `https://github.com/GreatCoffee/DSH-Go/releases/tag/go-62d166c770` —— 该发布早于这次上游同步，之后尚未发布新版 |
+| 最近发布 | `https://github.com/GreatCoffee/DSH-Go/releases/tag/go-81cdd50973` —— 0.2.3-alpha.2 的构建；资产为 `DSH-Go-81cdd50973-win-x64-portable.zip`（416 MB）及其 `.sha256` |
 | 安装目录 | `D:\Documents\Softwares\DSH-Go` |
 | 活动工作区 | `D:\Documents\Softwares\DSH-Go\portable\workspace\DSH-Portable`（仓库在 `...\dsh-go`） |
 | 已装插件 | `billion-context@0.1.216`、`dsh-connect-workbuddy@5.31.2`、`dsh-context@0.87.1`、`dsh-cost-meter@^1.9.57`、`dsh-gitbash-shell@0.55.1`、`dsh-ui-scale@^0.1.5`（均在 profile bundles 里启用；`dsh-ops` 已移除） |

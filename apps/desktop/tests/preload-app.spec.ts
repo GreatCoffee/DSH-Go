@@ -188,6 +188,13 @@ it.each(['win32', 'darwin'] as const)('installs the embedded mandatory UI only i
   }
 })
 
+it('skips the vendor mandatory UI in the Windows app document for a portable build', async () => {
+  vi.stubGlobal('process', { ...process, platform: 'win32', argv: [...process.argv, '--dsh-go-portable=bd921f539f'] })
+  vi.stubGlobal('location', new URL('dsh-app://app/'))
+  await import('../src/preload-app.ts')
+  expect(installMandatoryUpdateOverlay).not.toHaveBeenCalled()
+})
+
 it('exposes constrained shortcut operations and releases configuration subscriptions', async () => {
   vi.stubGlobal('location', new URL('dsh-app://app/'))
   await import('../src/preload-app.ts')

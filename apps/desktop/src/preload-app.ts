@@ -79,25 +79,25 @@ function createProductApi(): DshDesktopProductApi {
     // channel row and no update dialog can be opened.
     ...(portableBuild === undefined
       ? {
-          updates: {
-            channels: {
-              get: () => ipcRenderer.invoke(DESKTOP_IPC.updatesChannelGet) as Promise<DesktopChannelState>,
-              set: channel => ipcRenderer.invoke(DESKTOP_IPC.updatesChannelSet, channel) as Promise<DesktopChannelChangeResult>,
-              subscribe(listener) {
-                const handle = (_event: Electron.IpcRendererEvent, state: DesktopChannelState): void => { listener(state) }
-                ipcRenderer.on(DESKTOP_IPC.updatesChannelChanged, handle)
-                return () => { ipcRenderer.off(DESKTOP_IPC.updatesChannelChanged, handle) }
-              },
-            },
-            status: () => ipcRenderer.invoke(DESKTOP_IPC.updatesStatus) as Promise<DesktopUpdatePresentation>,
-            open: () => ipcRenderer.invoke(DESKTOP_IPC.updatesOpen) as Promise<void>,
+        updates: {
+          channels: {
+            get: () => ipcRenderer.invoke(DESKTOP_IPC.updatesChannelGet) as Promise<DesktopChannelState>,
+            set: channel => ipcRenderer.invoke(DESKTOP_IPC.updatesChannelSet, channel) as Promise<DesktopChannelChangeResult>,
             subscribe(listener) {
-              const handle = (_event: Electron.IpcRendererEvent, state: DesktopUpdatePresentation): void => { listener(state) }
-              ipcRenderer.on(DESKTOP_IPC.updatesPresentation, handle)
-              return () => { ipcRenderer.off(DESKTOP_IPC.updatesPresentation, handle) }
+              const handle = (_event: Electron.IpcRendererEvent, state: DesktopChannelState): void => { listener(state) }
+              ipcRenderer.on(DESKTOP_IPC.updatesChannelChanged, handle)
+              return () => { ipcRenderer.off(DESKTOP_IPC.updatesChannelChanged, handle) }
             },
           },
-        }
+          status: () => ipcRenderer.invoke(DESKTOP_IPC.updatesStatus) as Promise<DesktopUpdatePresentation>,
+          open: () => ipcRenderer.invoke(DESKTOP_IPC.updatesOpen) as Promise<void>,
+          subscribe(listener) {
+            const handle = (_event: Electron.IpcRendererEvent, state: DesktopUpdatePresentation): void => { listener(state) }
+            ipcRenderer.on(DESKTOP_IPC.updatesPresentation, handle)
+            return () => { ipcRenderer.off(DESKTOP_IPC.updatesPresentation, handle) }
+          },
+        },
+      }
       : { goPortable: { build: portableBuild } }),
   }
 }
@@ -116,7 +116,10 @@ if (location.protocol === `${SCHEME}:` && location.hostname === 'app') {
     else body.setAttribute('tabindex', previous)
   })
   syncWindowsAppearance()
-  if (process.platform === 'win32') installMandatoryUpdateOverlay()
+  // A portable build never builds the vendor policy (`main.ts` leaves `policyConfig`
+  // undefined), so its status handler is absent and the overlay would only report a
+  // missing handler at every launch.
+  if (process.platform === 'win32' && portableBuild === undefined) installMandatoryUpdateOverlay()
   contextBridge.exposeInMainWorld('__DSH_DIRECTORY_PICKER__', {
     pick: () => ipcRenderer.invoke(DESKTOP_IPC.directoryPick) as Promise<string | null>,
   })

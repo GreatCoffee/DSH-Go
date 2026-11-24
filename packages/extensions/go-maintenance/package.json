@@ -1,7 +1,7 @@
 {
   "name": "@deepseek-ai/dsh-go-maintenance",
   "description": "DSH-Go storage maintenance: scan and clear orphan Session projections, Session directories, and attachment blobs from Settings",
-  "version": "0.2.2-rc.1",
+  "version": "0.2.3-alpha.2",
   "publishConfig": {
     "access": "public"
   },
@@ -65,7 +65,8 @@
     "lib/typert.host.js",
     "lib/typert.host.d.ts",
     "lib/typert.remote-client.js",
-    "lib/typert.remote-client.d.ts"
+    "lib/typert.remote-client.d.ts",
+    "lib/typert.remote-client.d.ts.map"
   ],
   "scripts": {
     "bundle": "tsdown",

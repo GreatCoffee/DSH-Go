@@ -1,7 +1,7 @@
 {
   "name": "@deepseek-ai/dsh-go-session-delete",
   "description": "DSH-Go permanent Session deletion: a delete entry under Archive in the Session row menu plus its confirmation dialog",
-  "version": "0.2.2-rc.1",
+  "version": "0.2.3-alpha.2",
   "publishConfig": {
     "access": "public"
   },

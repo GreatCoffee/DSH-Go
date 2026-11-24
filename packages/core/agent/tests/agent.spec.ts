@@ -2,7 +2,7 @@ import { unsupportedModel } from '@deepseek-ai/dsh-agent-loop-testkit'
 import SessionProjectionRegistry from '@deepseek-ai/dsh-session-projection'
 import { describe, expect, expectTypeOf, it, onTestFinished, vi } from 'vitest'
 import { Context, Service, symbols } from '@deepseek-ai/cordis'
-import { Session, type SessionId } from '@deepseek-ai/dsh-session'
+import { Session, SessionId } from '@deepseek-ai/dsh-session'
 import AgentRegistry, { agentEvents } from '@deepseek-ai/dsh-agent'
 import TypertRegistry from '@deepseek-ai/dsh-typert-registry'
 

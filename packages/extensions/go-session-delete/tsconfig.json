@@ -42,7 +42,7 @@
       "path": "../../core/session/tsconfig.json"
     },
     {
-      "path": "../../client/ui-workspace"
+      "path": "../../client/ui-workspace/tsconfig.client.json"
     }
   ]
 }

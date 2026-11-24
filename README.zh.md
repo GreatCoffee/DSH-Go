@@ -24,7 +24,8 @@
 - **删除会话。** 会话行的 ⋯ 菜单在「归档会话」下方提供「删除会话」：经二次确认后先停止该会话正在运行的任务，再永久删除它的日志、注册表记录与分组痕迹。
 - **数据维护。** 设置 → 数据维护 扫描并清理已无工作区引用的残留：孤立检查点记录、孤立的会话日志、以及没有任何存活日志引用的附件。
 - **主机日志。** `portable\logs\host-<UTC 日期>.log` 记录启动、插件加载失败与维护清理，保留最新 7 个文件。
-- **没有厂商更新通道。** 便携版隐藏「检查更新」「意见反馈」「更新渠道」，版本号显示为 `0.2.2-rc.1 (DSH-Go <commit>)`。
+- **Git Bash 外壳（已安装插件，不在压缩包里）。** profile 里装着 `dsh-gitbash-shell`，它用本机 Git for Windows 提供 `bash` 工具替代 PowerShell 工具，命令因此走 MSYS 路径。Windows 上它 fail-closed：`read-only` / `workspace-write` 在执行前直接拒绝，除非在插件设置卡里关掉原生模式——那样会退回明确标注 unconfined 的兼容外壳。
+- **没有厂商更新通道。** 便携版隐藏「检查更新」「意见反馈」「更新渠道」，版本号显示为「原版版本号（DSH-Go 源码提交）」，例如 `0.2.3-alpha.2 (DSH-Go 81cdd50973)`。
 
 安装：从 [Releases](https://github.com/GreatCoffee/DSH-Go/releases) 下载 `DSH-Go-<commit>-win-x64-portable.zip`，解压后运行 `DeepSeek Harness.exe`。压缩包内只有空的 `portable\` 骨架；用新构建替换程序文件时保留你自己的 `portable\`。
 

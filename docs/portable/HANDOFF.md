@@ -12,45 +12,69 @@ No single wait, timeout, or blocking call may exceed 180 seconds, and progress m
 
 | Item | Value |
 |---|---|
-| Upstream | `deepseek-ai/deepseek-harness` (MIT), current baseline commit `fcc0ad46`, product version `0.2.2-rc.1` |
+| Upstream | `deepseek-ai/deepseek-harness` (MIT), current baseline commit `4b399c39a6` (`dsh-v0.2.3-alpha.2`, which is also `upstream/master`), product version `0.2.3-alpha.2` |
 | This repository | `GreatCoffee/DSH-Go` (public), `master` |
-| Latest build commit | `1869e914bd` (XDG directories put in place; the previous version `031e0b7fd4` included the bilingual updater + logging) |
-| Latest release | `https://github.com/GreatCoffee/DSH-Go/releases/tag/go-1869e914bd` |
+| Latest build commit | `81cdd50973` (portable builds skip the vendor mandatory-update overlay; the previous build `bd921f539f` adapted the fork extensions to the 0.2.3-alpha.2 release gates) |
+| Latest release | `https://github.com/GreatCoffee/DSH-Go/releases/tag/go-62d166c770` — that release predates this upstream sync; nothing newer has been published yet |
 | Install directory | `D:\Documents\Softwares\DSH-Go` |
 | Active workspace | `D:\Documents\Softwares\DSH-Go\portable\workspace\DSH-Portable` (the repository is in `...\dsh-go`) |
-| Installed plugins | `dsh-cost-meter@^1.9.57`, `dsh-ops@0.5.0`, `billion-context@0.1.212` (all enabled in profile bundles) |
-| Actions | Disabled (after the repository went public, the upstream 20 workflows run automatically, all failure emails, so they were turned off) |
+| Installed plugins | `billion-context@0.1.216`, `dsh-connect-workbuddy@5.31.2`, `dsh-context@0.87.1`, `dsh-cost-meter@^1.9.57`, `dsh-gitbash-shell@0.55.1`, `dsh-ui-scale@^0.1.5` (all enabled in profile bundles; `dsh-ops` is gone) |
+| Actions | Disabled (after the repository went public, the inherited 35 workflows ran automatically and every one of them failed, filling the inbox, so the switch was turned off) |
 | Dependabot | `.github/dependabot.yml` removed, PRs and branches cleared |
 
 ## 2. Directory layout
 
 ```
 D:\Documents\Softwares\DSH-Go\
-├─ DeepSeek Harness.exe / resources\ / *.dll      程序（约 1.1 GB）
-├─ BUILD-INFO.txt                                  版本 = 提交号 = 构建时间
-├─ Update-DSH-Go.cmd / .ps1                        更新器（双语、写日志、结束暂停）
-├─ update-last.log                                 最近一次更新日志
-├─ migrate-workspace.cmd / .mjs                    一次性迁移脚本（已完成使命，可删）
-└─ portable\                                       唯一数据根（整目录可搬迁）
-   ├─ dsh-home\        会话、storages、profiles（含插件）、.credentials.yaml
-   ├─ user-data\       Electron profile
-   ├─ workspace\DSH-Portable\   活动工作区（git 仓库 + node_modules）
-   ├─ cache\           pnpm store（插件与依赖包体都在这），兼作 XDG_CACHE_HOME
-   ├─ config\          XDG_CONFIG_HOME（按 XDG 定位的插件配置）
-   ├─ state\           XDG_STATE_HOME（同上，日志与运行状态）
-   └─ temp\
+├─ DeepSeek Harness.exe
+├─ BUILD-INFO.txt
+├─ Update-DSH-Go.cmd / .ps1
+├─ update-last.log
+├─ version
+└─ portable\
+   ├─ README.txt
+   ├─ dsh-home\
+   ├─ user-data\
+   ├─ workspace\
+   ├─ cache\
+   ├─ config\
+   ├─ state\
+   ├─ logs\
+   ├─ temp\
+   └─ state.json
 ```
+
+| Entry | What it is |
+| --- | --- |
+| program files | `DeepSeek Harness.exe` plus `resources\`, `*.dll`, and `locales\`: a 246 MB exe and a 903 MB `resources\`. |
+| `BUILD-INFO.txt` | `version` / `commit` / `built`, three lines; the `version` line is what the UI shows. |
+| `Update-DSH-Go.cmd` / `.ps1` | The updater (bilingual, writes a log, pauses at the end). |
+| `update-last.log` | The last updater run; it appears only after an update. |
+| `version` | The Electron version (`44.11.5`). |
+| `portable\` | The one data root: the whole directory can move. It is about 13 GB here. |
+| `portable\README.txt` | Notes for anyone browsing the directory: sandbox, XDG, one instance, logs. |
+| `dsh-home\` | `$DSH_HOME`: `sessions\`, `storages\`, `profiles\` (plugins included), `attachments\`, `.credentials.yaml`. |
+| `user-data\` | The Electron profile: Local Storage, `desktop\settings.json`, and `logs\` with crash reports. |
+| `workspace\` | The workspace parent; several workspaces can live side by side. |
+| `cache\` | The pnpm store (3.3 GB) plus the npm cache; also `XDG_CACHE_HOME`. |
+| `config\` | `XDG_CONFIG_HOME`: plugin configuration located per the XDG spec. |
+| `state\` | `XDG_STATE_HOME`: logs and run state for the same plugins. |
+| `logs\` | `host-<date>.log`, newest seven kept. |
+| `temp\` | The Electron scratch directory. |
+| `state.json` | `lastRoot` / `lastLaunch`, used to notice a move. |
 
 ## 3. Environment prerequisites
 
 | Tool | Version | Notes |
 |---|---|---|
-| Node.js | 24.21.0 | the repository requires ≥ 24.9 |
-| pnpm | 11.28.5 | with `corepack prepare pnpm@11.28.5 --activate` |
-| PowerShell | 7.6.9 | the build script requires `pwsh` |
-| VS 2022 BuildTools | 17.14.44 / MSVC 14.44 | the packaging precheck requires `VC.Tools.x86.x64`, installed |
-| Python | 3.12 (bundled for packaging) | the system Python 3.14 is only used as an auxiliary |
-| Git / tar | bundled with the system | — |
+| Node.js | 24.21.0 on this build machine | upstream `engines.node` is `^24.22.3 \|\| >=26.13.1`, so pnpm prints one `[WARN] Unsupported engine` per run; it does not block the build |
+| Node.js (bundled) | 24.22.3 | `resources\runtime\versions.json`; the packaged runtime comes from Electron, so it is unaffected by the build machine |
+| pnpm | 11.28.5 | `packageManager` pins it; the system pnpm (12.23.0 here) is not used inside the repository |
+| PowerShell | 7.6.10 | the build script requires `pwsh` |
+| VS 2022 BuildTools | 17.14.44 / MSVC 14.44.35207 | the packaging precheck requires `VC.Tools.x86.x64`, installed |
+| Python | 3.12.14 (bundled for packaging) | the system Python 3.14 is only used as an auxiliary |
+| Git | 2.44.0.windows.1 | Git for Windows |
+| tar | use `C:\Windows\System32\tar.exe` (bsdtar 3.5.2) | GNU tar 1.35 from Git Bash reads `D:\...` as a remote host and fails with `Cannot connect to D: resolve failed`; put `C:\Windows\System32` first on PATH for the build |
 
 ## 4. The four workflows
 
@@ -59,19 +83,21 @@ D:\Documents\Softwares\DSH-Go\
 **A short path is mandatory**, otherwise the built-in Python's `lxml` reports `DLL load failed while importing _elementpath: 文件名或扩展名太长` for exceeding 260 characters.
 
 ```powershell
-# 1) 复制源码到短路径（不要复制 node_modules）
-robocopy 'D:\Documents\Softwares\DSH-Go\portable\workspace\DSH-Portable\dsh-go' 'D:\b\dsh-go' /E /MT:16 /XJ /XD node_modules .desktop-build dist .pnpm-store
+# 1) copy the source to the short path — never follow node_modules
+robocopy 'D:\Documents\Softwares\DSH-Go\portable\workspace\DSH-Portable\dsh-go' 'D:\b\dsh-go' /MIR /MT:16 /XJ /XD node_modules .desktop-build dist .pnpm-store
 
-# 2) 装依赖
+# 2) install dependencies (11.28.5 comes from packageManager)
 cd D:\b\dsh-go
 pnpm install --frozen-lockfile
 
-# 3) 构建并组装便携目录
+# 3) build and assemble the portable directory
+#    bsdtar must win over Git Bash's GNU tar, or unpacking D:\... fails
+$env:PATH = "C:\Windows\System32;$env:PATH"
 pwsh scripts/build-portable.ps1
-# 产物：D:\b\dsh-go\dist\DSH-Go（约 1,081 MB）
+# output: D:\b\dsh-go\dist\DSH-Go (1,083 MB)
 ```
 
-It takes about 5 minutes. Delete `D:\b` after the build completes.
+The build runs 10 gates first (`run-gates: 10 passed, 0 failed, 0 skipped`, 50 s) and then packages; the whole chain takes about 9–12 minutes on a 24-core machine and needs 4–6 GB of dependencies. **Keep `D:\b\dsh-go`**: with `node_modules` in place the next build reuses the store instead of downloading gigabytes again. `dist\DSH-Go` is about 1.1 GB, and `.desktop-build` about 3.4 GB can be deleted between builds.
 
 ### 4.2 Release
 
@@ -98,14 +124,33 @@ D:\Documents\Softwares\DSH-Go\Update-DSH-Go.cmd
 ### 4.4 Following upstream
 
 ```powershell
-pwsh scripts/sync-upstream.ps1 -DryRun   # 看落后多少
-pwsh scripts/sync-upstream.ps1           # 合并（或 -Rebase）
+pwsh scripts/sync-upstream.ps1 -DryRun   # how far behind, and which files overlap
+git tag pre-sync-<date>                  # a cheap way back before merging
+pwsh scripts/sync-upstream.ps1           # merge (or -Rebase)
+# resolve conflicts, then regenerate what the build regenerates
 pnpm install --frozen-lockfile
-pnpm exec tsc -b apps/desktop/tsconfig.host.json packages/api/workspace-controller/tsconfig.host.json
-pwsh scripts/build-portable.ps1          # 在短路径副本里
+pnpm run gen-cordis-catalog
+pnpm run gen-cordis-api
+pnpm run gen-client-catalog
+pnpm run gen-plugin-packages
+pnpm run verify-translation-pairing --write <each edited pair>
+git commit                               # then rebuild in the short-path copy
 ```
 
-The conflict surface is fixed at four places: `apps/desktop/src/main.ts` (the hook), `apps/desktop/package.json` (one devDependency), `packages/api/workspace-controller/src/default-directory.ts` (the environment variable), `.github/dependabot.yml` (deleted in this repository, kept upstream).
+**The conflict surface is not fixed.** The 0.2.3-alpha.2 sync (3124 upstream commits, 8655 changed files) produced **26 conflicting files**, and the script's hint below the failure names only three of them. Sorted by how they are resolved:
+
+| Kind | Files | How |
+|---|---|---|
+| Generated | `packages/extensions/cordis-client-runner/src/client/slot-catalog.ts`, `packages/extensions/tool-cordis/src/api-catalog.ts`, `packages/preset/agent-preset/skills/dsh-doc/references/packages.md`, `docs/subsystems/workspace.md` + `.zh.md` | take upstream, then rerun the `gen-*` scripts above; the generated sections carry `<!-- BEGIN GENERATED ... -->` markers |
+| Lockfile | `pnpm-lock.yaml` | take upstream, `pnpm install` recomputes it |
+| Translation sidecars | `README.i18n.yaml` next to each edited pair (`packages/client/ui-workspace`, `packages/core/session`, `packages/session/session-persistence`, `packages/session/session-persistence-jsonl`, `packages/workspace/workspace`) | take either side, then `verify-translation-pairing --write` re-records |
+| Fork hooks | `apps/cli/package.json`, `apps/desktop/src/main.ts`, `packages/util/official-bundles/src/bundles.ts`, `packages/api/remotes/src/client/index.ts`, `packages/client/ui-settings-account/src/client/AccountMenu.tsx`, `packages/workspace/workspace/src/index.ts`, `packages/session/session-persistence-jsonl/src/index.ts`, `packages/client/ui-workspace/README{.md,.zh.md}`, `packages/workspace/workspace/README{.md,.zh.md}`, `packages/session/session-persistence/README{.md,.zh.md}` | keep upstream's new lines and re-apply the fork's few additions on top |
+| Tests | `packages/client/ui-settings-account/tests/apply.client.spec.ts` | merge both sides |
+
+Two fork-owned bundles also break the upstream release gates after a sync, and both fixes are small:
+
+1. `packages/extensions/go-maintenance/package.json` — its `files` must list `lib/typert.remote-client.d.ts.map`, or `generate-typert` fails with `typert(host): @deepseek-ai/dsh-go-maintenance package files must include lib/typert.remote-client.d.ts.map`. Upstream packages that publish typert artifacts all list it.
+2. `packages/*/*/package.json` and `apps/*/package.json` must share one version (`scripts/release/families.ts` `verifyVersions()` throws `dsh release members must share one version`); bump the two fork bundles whenever the upstream version moves.
 
 ## 5. Known pitfalls (in the order encountered)
 
@@ -120,6 +165,8 @@ The conflict surface is fixed at four places: `apps/desktop/src/main.ts` (the ho
 9. **The release stays Draft during publishing**: `gh release create` with a 407 MB asset takes over ten minutes; meanwhile `isDraft` returns `true` and `assets` contains only the already-uploaded `.sha256`; it flips to published and Latest only when the upload finishes. Do not treat it as a failure and rerun.
 10. **`netstat -e` counters wrap at 4 GiB**: cumulative bytes dropping from 4,142,064,790 to 335,306,974 is a counter rollover, not a network drop; the only way to tell whether the upload is moving is the delta between adjacent samples.
 11. **Plugin state lands in the user directory by default**: XDG-aware plugins (such as billion-context) write to `~/.config`, `~/.cache`, `~/.local/state`. The portable build already points `XDG_CONFIG_HOME`/`XDG_CACHE_HOME`/`XDG_STATE_HOME` at `portable\config|cache|state` in `applyPortableEnvironment`; copies left in the user directory before the upgrade must be moved by hand.
+12. **Never replace program files while the application runs.** `robocopy` interrupts on the locked `resources\app.asar`, leaving it half-written; the installed `BUILD-INFO.txt` then still reports the old commit, the file sizes match, and only the renderer notices — it crashes with `TypeError: Cannot read properties of undefined (reading 'showTotalWithPlan')` and the app shows "Desktop renderer exited: crashed". The only repair is a full reinstall; a single-file restore is not enough because `DeepSeek Harness.exe` and `BUILD-INFO.txt` are stale too. The installer must wait for the app *and* verify the copied hashes afterwards.
+13. **`install-dsh-go.ps1` must classify processes, not just `tasklist` on the image name.** Leaked Chromium helpers keep the name `DeepSeek Harness.exe` alive after the app exits (observed: a `--type=utility` child with a dead parent, `threads=1`, 0 CPU seconds, holding the exe). Anything without `--type=` or `--mojo-platform-channel-handle` is the real app (main process plus the `app.asar` host); wait only on those, then clean the leftovers. Do not treat "parent process is gone" as "orphan" — an Explorer-launched app legitimately loses its parent.
 
 ## 6. Data boundaries and incidents
 
@@ -138,13 +185,14 @@ The conflict surface is fixed at four places: `apps/desktop/src/main.ts` (the ho
 
 | Item | Status |
 |---|---|
-| Plugin compatibility measurement | Done (dsh-ops 0.4.4 was rejected for `engines.dsh <0.2.2-0`; 0.5.0 adapts to 0.2.2-rc.1) |
+| Plugin compatibility measurement | Done (dsh-ops 0.4.4 was rejected for `engines.dsh <0.2.2-0`; 0.5.0 adapted to 0.2.2-rc.1 and was later uninstalled, so the current profile carries six third-party plugins) |
 | Plugin state directories move with the package | Done (three XDG variables, released in `go-1869e914bd`) |
-| Delete session (built-in bundle `@deepseek-ai/dsh-go-session-delete`) | Implemented and locally tested; visible in the plugin manager as an optional "provided with the installer" bundle and can be turned off (built-in bundles do not support uninstall); before deleting it sends `workspace/session-stop` to stop running tasks, then `workspace/session-close` to release live sessions, and after deletion emits `session/deleted` to clear the projection cache — a session just chatted in and still running can be deleted without a restart; not yet packaged into a release |
-| Maintenance page (built-in bundle `@deepseek-ai/dsh-go-maintenance`) | Implemented and locally tested: the settings page's "Maintenance" section scans and cleans three kinds of leftovers on demand (projection checkpoints no workspace references, log directories no workspace references, image attachments no log references), all on demand and never scanning at startup; liveness is the workspace answer (`sessionIds` + archived + pinned) and reports nothing when no workspace references anything; a directory is skipped when `workspace/session-activity` still reports work; every clean writes one `[dsh-go-maintenance]` audit line into the Host log (`ctx.logger` does not reach the tee, so it uses `console`); depends on `SessionPersistence.root` and the projection cache service's new `orphanIds`/`pruneOrphans`; not yet packaged into a release |
-| Hide vendor-only entries | Done and locally green: **Application → Check for Updates…** is not added in a portable build, the account menu does not inject **Feedback**, Settings → General hides **Update channel** because the preload exposes no `updates` bridge (`DshDesktopProductApi.updates` is optional), and the version label reads `0.2.2-rc.1 (DSH-Go <commit>)` from `BUILD-INFO.txt` through `--dsh-go-portable=`; not packaged yet |
+| Delete session (built-in bundle `@deepseek-ai/dsh-go-session-delete`) | Implemented and locally tested; visible in the plugin manager as an optional "provided with the installer" bundle and can be turned off (built-in bundles do not support uninstall); before deleting it sends `workspace/session-stop` to stop running tasks, then `workspace/session-close` to release live sessions, and after deletion emits `session/deleted` to clear the projection cache — a session just chatted in and still running can be deleted without a restart; shipped in `go-62d166c770` |
+| Maintenance page (built-in bundle `@deepseek-ai/dsh-go-maintenance`) | Implemented and locally tested: the settings page's "Maintenance" section scans and cleans three kinds of leftovers on demand (projection checkpoints no workspace references, log directories no workspace references, image attachments no log references), all on demand and never scanning at startup; liveness is the workspace answer (`sessionIds` + archived + pinned) and reports nothing when no workspace references anything; a directory is skipped when `workspace/session-activity` still reports work; every clean writes one `[dsh-go-maintenance]` audit line into the Host log (`ctx.logger` does not reach the tee, so it uses `console`); depends on `SessionPersistence.root` and the projection cache service's new `orphanIds`/`pruneOrphans`; shipped in `go-62d166c770` |
+| Hide vendor-only entries | Done and locally green: **Application → Check for Updates…** is not added in a portable build, the account menu does not inject **Feedback**, Settings → General hides **Update channel** because the preload exposes no `updates` bridge (`DshDesktopProductApi.updates` is optional), and the version label reads the upstream version plus the DSH-Go commit from `BUILD-INFO.txt` through `--dsh-go-portable=`; shipped in `go-62d166c770` |
 | Portable host log | Done: `portable\logs\host-<date>.log` mirrors stdout/stderr (with ANSI stripped), keeping the last 7; `installPortableLogging` in `apps/desktop/src/portable.ts` |
 | Plugins survive upgrades | Done (drilled with a real release package) |
 | macOS portable | On hold (needs a Mac build) |
 | Linux portable | On hold (Desktop is not an official release target; the viable path is a CLI/Web portable package) |
-| Switching the default shell to bash | A later plan of the user; the switch points are the `*-pwsh` / `*-bash` lines in `packages/bundle/base/cordis.patch.yml` |
+| Switching the default shell to bash | Done through a plugin, not through the bundle: `dsh-gitbash-shell@0.55.1` provides the `bash` tool and hides `pwsh`. It runs Git Bash with `windowsHide: true`, and on Windows it fails closed — `read-only` / `workspace-write` are refused before execution unless `experimentalNative` is switched off on its settings card, which falls back to an explicitly unconfined shell |
+| Portability of the build helper scripts | `scripts/{build,release,sync-upstream,update}-portable.ps1` and `D:\b\install-dsh-go.ps1` are fork-only files with no upstream tests; treat them as the least reviewed part of this repository |

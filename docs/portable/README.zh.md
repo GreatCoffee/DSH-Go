@@ -10,19 +10,36 @@ DSH-Go 是 [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness)�
 
 ```
 DSH-Go\
-├─ DeepSeek Harness.exe     启动入口，内置便携引导
-├─ resources\ ...           Electron、asar、自带 Node/pnpm 运行时
-└─ portable\                唯一的数据根
-   ├─ dsh-home\             $DSH_HOME：sessions\ storages\ profiles\ attachments\ .credentials.yaml
-   ├─ user-data\            Electron profile：Local Storage、desktop\settings.json、logs\
-   ├─ workspace\            默认工作区父目录（实际工作区为 workspace\deepseek-harness\default-workspace）
-   ├─ cache\                npm / pnpm 缓存、Chromium 缓存，兼作 XDG_CACHE_HOME
-   ├─ config\               XDG_CONFIG_HOME：遵守 XDG 规范的工具与插件的配置
-   ├─ state\                XDG_STATE_HOME：同上，日志与运行状态
-   ├─ logs\                 宿主控制台日志 host-<日期>.log，保留最近 7 天
-   ├─ temp\                 Electron 临时目录
-   └─ state.json            上次启动所在的目录，用于识别"搬家"
+├─ DeepSeek Harness.exe
+├─ resources\
+└─ portable\
+   ├─ README.txt
+   ├─ dsh-home\
+   ├─ user-data\
+   ├─ workspace\
+   ├─ cache\
+   ├─ config\
+   ├─ state\
+   ├─ logs\
+   ├─ temp\
+   └─ state.json
 ```
+
+| 条目 | 内容 |
+| --- | --- |
+| `DeepSeek Harness.exe` | 启动入口，内置便携引导。 |
+| `resources\` | Electron、`app.asar` 与自带的 Node/pnpm 运行时，约 903 MB。 |
+| `portable\` | 唯一的数据根：搬走整个目录就把一切搬走了。实际约 13 GB。 |
+| `portable\README.txt` | 给直接看这个目录的人准备的说明。 |
+| `dsh-home\` | `$DSH_HOME`：`sessions\`、`storages\`、`profiles\`（含插件）、`attachments\`、`.credentials.yaml`。 |
+| `user-data\` | Electron profile：Local Storage、`desktop\settings.json`，以及 `logs\` 里的崩溃报告。 |
+| `workspace\` | 工作区父目录，每个工作区是它自己的子目录，可以并排放多个。 |
+| `cache\` | pnpm store（3.3 GB）与 npm 缓存，兼作 `XDG_CACHE_HOME`。 |
+| `config\` | `XDG_CONFIG_HOME`：遵守 XDG 规范的工具与插件的配置。 |
+| `state\` | `XDG_STATE_HOME`：同一批工具的日志与运行状态。 |
+| `logs\` | 宿主控制台日志 `host-<日期>.log`，保留最近 7 个。 |
+| `temp\` | Electron 临时目录。 |
+| `state.json` | 上次启动所在的目录，用于识别「搬家」。 |
 
 程序文件与数据完全分离：升级时只替换程序文件，`portable\` 原样保留。
 
@@ -67,6 +84,7 @@ DSH-Go 在会话行的 `⋯` 菜单里多了一行**删除会话**，位于**归
 “存活”按工作区判定：所有工作区的会话、归档集合、置顶集合。日志还在磁盘上、但已不属于任何工作区的会话算残留——这正是早期版本删除会话后留下的那种目录，界面上看不见也删不掉。如果一个工作区都不引用任何会话，扫描会报空，而不是把整个安装当成残留。清理会话目录前还会确认该会话没有任务在跑。
 
 它只在点击时工作，不会在启动时扫描——装得越久，启动扫描就越慢。判不准的一律不动：某个会话日志读不出来时，本次不会清理任何附件；持久化后端不落目录时，也不报告孤立目录。每次清理都会往 `logs\` 里的宿主日志写一行审计记录。成本台账保留已删会话的计费历史，不在此列。
+
 ## 凭据
 
 `portable\dsh-home\.credentials.yaml` 是明文，随目录一起移动，所以换机器后不需要重新登录。分享、上传或提交前请删除它。
@@ -81,13 +99,13 @@ DSH-Go 在会话行的 `⋯` 菜单里多了一行**删除会话**，位于**归
 
 便携版无法被安装器覆盖（那会把目录搬进 Program Files），因此禁用了官方的强制更新检查；拆包后的自动更新配置本来也不包含在无签名目录构建里。
 
-界面里属于官方发行版的入口在便携版中隐藏：标题栏「应用 → 检查更新…」、侧栏账号菜单的「意见反馈」、设置 → 通用 里的「更新渠道」。同一页底部的版本号显示为「原版版本号（DSH-Go 源码提交）」，例如 `0.2.2-rc.1（DSH-Go 2f292ba37d）`，取自程序目录里 `BUILD-INFO.txt` 的 `commit`。
+界面里属于官方发行版的入口在便携版中隐藏：标题栏「应用 → 检查更新…」、侧栏账号菜单的「意见反馈」、设置 → 通用 里的「更新渠道」。同一页底部的版本号显示为「原版版本号（DSH-Go 源码提交）」，例如 `0.2.3-alpha.2（DSH-Go 81cdd50973）`，取自程序目录里 `BUILD-INFO.txt` 的 `commit`。
 
 升级方式是替换程序文件、保留 `portable\`。源码级的更新（跟进官方仓库）见 [SYNC.zh.md](SYNC.zh.md)，构建方法见 [BUILD.zh.md](BUILD.zh.md)。
 
 ## 本镜像的 GitHub Actions
 
-本仓库在仓库级关闭了 GitHub Actions（设置 → Actions → General → Disable actions），所以不会有任何 workflow 启动，用量曲线保持平直。这是有意为之：镜像带着上游的 32 个 workflow 文件，而一个刚建好的仓库只要收到第一次 push，它们就会全部启动。
+本仓库在仓库级关闭了 GitHub Actions（设置 → Actions → General → Disable actions），所以不会有任何 workflow 启动，用量曲线保持平直。这是有意为之：镜像带着上游的 35 个 workflow 文件，而一个刚建好的仓库只要收到第一次 push，它们就会全部启动。
 
 2026-11-05 那次建库 push，加上继承来的 `dependabot.yml` 一次开出的 24 个依赖升级 PR，在 87 分钟里产生了 229 次 workflow 运行。账单面板上的 `$13.73` 是这些分钟的标价，`Billed` 始终是 `$0.00`，因为这笔用量被全额抵扣了。Dependabot 的版本更新已在 `89eb9e5021` 移除，之后 Actions 开关也被关掉。
 
@@ -95,14 +113,19 @@ DSH-Go 在会话行的 `⋯` 菜单里多了一行**删除会话**，位于**归
 
 ## 更新自己
 
-程序目录里有 `Update-DSH-Go.ps1`，双击或用 PowerShell 运行即可：
+程序目录里有 `Update-DSH-Go.ps1`，双击 `Update-DSH-Go.cmd` 或用 PowerShell 运行。四行分别对应：下载最新发布版并替换程序文件、只检查有无新版本、先结束正在运行的实例再更新、结束时不停留按键（供自动化）：
 
 ```powershell
-pwsh .\Update-DSH-Go.ps1          # 下载最新发布版并替换程序文件
-pwsh .\Update-DSH-Go.ps1 -Check   # 只检查有没有新版本
-pwsh .\Update-DSH-Go.ps1 -Force   # 关闭正在运行的实例后更新
+pwsh .\Update-DSH-Go.ps1          # download the newest release and replace the program files
+pwsh .\Update-DSH-Go.ps1 -Check   # only report whether a newer release exists
+pwsh .\Update-DSH-Go.ps1 -Force   # stop a running instance first, then update
+pwsh .\Update-DSH-Go.ps1 -NoPause # do not wait for a key at the end (for automation)
 ```
 
-它从 GitHub Releases 读取最新版本（按 `BUILD-INFO.txt` 里的提交号比对），下载 zip 并**校验 SHA-256**，然后覆盖程序文件；`portable\` 不会被触碰。更新需要联网，仓库公开后无需任何令牌。
+它跟随 `releases/latest` 重定向取得最新的 `go-<commit>` 标签，而不是调用 GitHub REST API——匿名调用会被限流，这一点不要改回去。拿到标签后与 `BUILD-INFO.txt` 的 `commit` 行比对，下载 `DSH-Go-<commit>-win-x64-portable.zip`，**校验 SHA-256**，通过后才覆盖程序文件；`portable\` 始终不动。更新需要联网，仓库公开后无需令牌。每次运行都会在程序目录留下 `update-last.log`。
+
+它在有实例占用程序文件时拒绝更新。该检查按安装目录过滤进程列表，因此连崩溃后遗留的 Chromium helper 也会被算进去——如果你明明关掉了应用它还说在运行，找一个父进程已死的 `DeepSeek Harness.exe` 子进程杀掉，或者加 `-Force`。
+
+绝不要在应用运行时手工替换程序文件：`robocopy` 会在被占用的 `resources\app.asar` 上中途停下，结果只有完整重装才能修复的渲染进程崩溃。
 
 若新版本启动异常，把旧版本目录整体替换回来即可，数据始终在 `portable\` 里不受影响。

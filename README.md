@@ -24,7 +24,8 @@ English | [中文](README.zh.md)
 - **Delete a Session.** The row's ⋯ menu gains 删除会话 below 归档会话: after a confirmation dialog it stops the Session's running work, then permanently removes its log, registry entry, and grouping traces.
 - **Storage maintenance.** Settings → 数据维护 scans and clears what no workspace references any more: checkpoint records, orphan Session logs, and attachments no surviving log mentions.
 - **Host log.** `portable\logs\host-<UTC date>.log` records startup, plugin failures, and maintenance clears; the newest seven files are kept.
-- **No vendor update path.** The portable build hides 检查更新, 意见反馈, and 更新渠道, and shows the version as `0.2.2-rc.1 (DSH-Go <commit>)`.
+- **Git Bash shell (installed plugin, not in the archive).** The profile carries `dsh-gitbash-shell`, which replaces the PowerShell tool with a `bash` tool backed by the local Git for Windows installation, so commands use MSYS paths. On Windows it fails closed: `read-only` / `workspace-write` are refused before execution unless you switch its native mode off on the plugin's settings card, which falls back to an explicitly unconfined shell.
+- **No vendor update path.** The portable build hides 检查更新, 意见反馈, and 更新渠道, and shows the version as the upstream version plus the DSH-Go source commit, for example `0.2.3-alpha.2 (DSH-Go 81cdd50973)`.
 
 Install by unzipping `DSH-Go-<commit>-win-x64-portable.zip` from [Releases](https://github.com/GreatCoffee/DSH-Go/releases) and running `DeepSeek Harness.exe`. The archive carries an empty `portable\` skeleton; keep your own `portable\` when replacing program files with a newer build.
 

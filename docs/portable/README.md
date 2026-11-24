@@ -10,19 +10,36 @@ This project is not an official DeepSeek release and carries no official endorse
 
 ```
 DSH-Go\
-├─ DeepSeek Harness.exe     启动入口，内置便携引导
-├─ resources\ ...           Electron、asar、自带 Node/pnpm 运行时
-└─ portable\                唯一的数据根
-   ├─ dsh-home\             $DSH_HOME：sessions\ storages\ profiles\ attachments\ .credentials.yaml
-   ├─ user-data\            Electron profile：Local Storage、desktop\settings.json、logs\
-   ├─ workspace\            默认工作区父目录（实际工作区为 workspace\deepseek-harness\default-workspace）
-   ├─ cache\                npm / pnpm 缓存、Chromium 缓存，兼作 XDG_CACHE_HOME
-   ├─ config\               XDG_CONFIG_HOME：遵守 XDG 规范的工具与插件的配置
-   ├─ state\                XDG_STATE_HOME：同上，日志与运行状态
-   ├─ logs\                 宿主控制台日志 host-<日期>.log，保留最近 7 天
-   ├─ temp\                 Electron 临时目录
-   └─ state.json            上次启动所在的目录，用于识别"搬家"
+├─ DeepSeek Harness.exe
+├─ resources\
+└─ portable\
+   ├─ README.txt
+   ├─ dsh-home\
+   ├─ user-data\
+   ├─ workspace\
+   ├─ cache\
+   ├─ config\
+   ├─ state\
+   ├─ logs\
+   ├─ temp\
+   └─ state.json
 ```
+
+| Entry | What it holds |
+| --- | --- |
+| `DeepSeek Harness.exe` | The entry point; the portable bootstrap lives inside it. |
+| `resources\` | Electron, `app.asar`, and the bundled Node/pnpm runtime, about 903 MB. |
+| `portable\` | The one data root: moving the whole directory moves everything. It is about 13 GB in practice. |
+| `portable\README.txt` | The notes a person browsing this directory needs. |
+| `dsh-home\` | `$DSH_HOME`: `sessions\`, `storages\`, `profiles\` (plugins included), `attachments\`, `.credentials.yaml`. |
+| `user-data\` | The Electron profile: Local Storage, `desktop\settings.json`, and `logs\` with crash reports. |
+| `workspace\` | The workspace parent; each workspace is its own subdirectory, and several can sit side by side. |
+| `cache\` | The pnpm store (3.3 GB) and the npm cache; also `XDG_CACHE_HOME`. |
+| `config\` | `XDG_CONFIG_HOME`: configuration of XDG-aware tools and plugins. |
+| `state\` | `XDG_STATE_HOME`: those tools' logs and run state. |
+| `logs\` | The host console log `host-<date>.log`; the newest seven are kept. |
+| `temp\` | The Electron scratch directory. |
+| `state.json` | The directory last launched from, used to notice a move. |
 
 Program files and data are fully separated: an upgrade replaces only the program files, and `portable\` stays as it is.
 
@@ -67,6 +84,7 @@ The settings page has a **Maintenance** section, provided by the built-in bundle
 "Alive" is decided by workspaces: every workspace's sessions, plus the archived and pinned sets. A session whose log still sits on disk but that no workspace owns is residue — exactly the directories earlier builds left behind when a Session was deleted, invisible in the UI and impossible to remove there. When no workspace references anything at all, the scan reports nothing rather than calling the whole installation residue. Before a Session directory is removed, the Host also confirms no work is still running on it.
 
 It works only on click and never scans at startup — the longer the installation lives, the slower a startup scan would be. Anything it cannot judge is left untouched: when one session log cannot be read, no attachment is cleaned up this run; when the persistence backend keeps no directory, no orphan directory is reported either. Every clean writes one audit line into the Host log under `logs\`. The cost ledger keeps the billing history of deleted sessions and is not part of this.
+
 ## Credentials
 
 `portable\dsh-home\.credentials.yaml` is plaintext and moves with the directory, so a new machine needs no new login. Delete it before sharing, uploading, or committing.
@@ -81,13 +99,13 @@ The switch works at plugin granularity: with it off, the button, quote insertion
 
 The portable build cannot be overwritten by the installer (that would move the directory into Program Files), so the official mandatory update check is disabled; the unpacked auto-update configuration was never part of the unsigned directory build anyway.
 
-Portable builds hide the entries that belong to the official distribution: **Application → Check for Updates…**, the **Feedback** item in the sidebar account menu, and the **Update channel** row under Settings → General. The version label at the bottom of that page becomes the upstream version plus the DSH-Go source commit, for example `0.2.2-rc.1 (DSH-Go 2f292ba37d)`, which is the `commit` line of `BUILD-INFO.txt` beside the executable.
+Portable builds hide the entries that belong to the official distribution: **Application → Check for Updates…**, the **Feedback** item in the sidebar account menu, and the **Update channel** row under Settings → General. The version label at the bottom of that page becomes the upstream version plus the DSH-Go source commit, for example `0.2.3-alpha.2 (DSH-Go 81cdd50973)`, which is the `commit` line of `BUILD-INFO.txt` beside the executable.
 
 An upgrade replaces the program files and keeps `portable\`. For source-level updates (following the official repository), see [SYNC.md](SYNC.md); for the build method, see [BUILD.md](BUILD.md).
 
 ## GitHub Actions in this mirror
 
-GitHub Actions is disabled at repository level (Settings → Actions → General → Disable actions), so no workflow starts here, and the usage chart stays flat. That is deliberate: the mirror carries upstream's 32 workflow files, and a fresh repository starts all of them as soon as it receives its first push.
+GitHub Actions is disabled at repository level (Settings → Actions → General → Disable actions), so no workflow starts here, and the usage chart stays flat. That is deliberate: the mirror carries upstream's 35 workflow files, and a fresh repository starts all of them as soon as it receives its first push.
 
 On 2026-11-05 the creation push, plus the 24 dependency pull requests that the inherited `dependabot.yml` opened, produced 229 workflow runs inside 87 minutes. The billing dashboard's `$13.73` is the gross list price of those minutes; `Billed` stayed at `$0.00` because that usage was discounted in full. Dependabot version updates were removed in `89eb9e5021`, and the Actions switch was turned off afterwards.
 
@@ -95,14 +113,19 @@ The workflow files stay in place even though they never run: `scripts/*.spec.ts`
 
 ## Updating itself
 
-The program directory contains `Update-DSH-Go.ps1`; double-click it or run it in PowerShell:
+The program directory contains `Update-DSH-Go.ps1`; double-click `Update-DSH-Go.cmd` or run it in PowerShell:
 
 ```powershell
-pwsh .\Update-DSH-Go.ps1          # 下载最新发布版并替换程序文件
-pwsh .\Update-DSH-Go.ps1 -Check   # 只检查有没有新版本
-pwsh .\Update-DSH-Go.ps1 -Force   # 关闭正在运行的实例后更新
+pwsh .\Update-DSH-Go.ps1          # download the newest release and replace the program files
+pwsh .\Update-DSH-Go.ps1 -Check   # only report whether a newer release exists
+pwsh .\Update-DSH-Go.ps1 -Force   # stop a running instance first, then update
+pwsh .\Update-DSH-Go.ps1 -NoPause # do not wait for a key at the end (for automation)
 ```
 
-It reads the latest version from GitHub Releases (comparing against the commit hash in `BUILD-INFO.txt`), downloads the zip, **verifies SHA-256**, and then overwrites the program files; `portable\` is not touched. Updating needs network access, and once the repository is public no token is needed.
+It follows the `releases/latest` redirect to learn the newest `go-<commit>` tag rather than calling the GitHub REST API, which rate-limits anonymous callers — keep that behaviour. It then compares the tag against the `commit` line of `BUILD-INFO.txt`, downloads `DSH-Go-<commit>-win-x64-portable.zip`, **verifies SHA-256**, and only then overwrites the program files; `portable\` is never touched. Updating needs network access, and once the repository is public no token is needed. Each run writes `update-last.log` beside the executable.
+
+It refuses to update while an instance holds the program files. That check reads the process list for this installation directory, which also catches a leaked Chromium helper left behind after a crash — if it insists the app is running when you have closed it, look for a `DeepSeek Harness.exe` child with a dead parent and kill it, or pass `-Force`.
+
+Never restore program files by hand while the app is running: `robocopy` stops halfway through the locked `resources\app.asar`, and the result is a renderer crash that only a full reinstall repairs.
 
 If a new version starts abnormally, swap the old version directory back in wholesale; the data is always in `portable\` and unaffected.

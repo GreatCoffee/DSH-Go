@@ -29,11 +29,11 @@ Mount one persistence backend to make sessions durable. The backend registers it
 
 ### Choosing a backend
 
-The seam ships the [JSONL](../session-persistence-jsonl/README.md) backend: one append-only `.jsonl.zstd` log per session. A third-party backend may implement the service directly; the [backend contract](#understand-the-implementation) below is what it must honor.
+Shipped profiles use the [JSONL](../session-persistence-jsonl/README.md) backend: one append-only `.jsonl.zstd` log per session. The separate [SQLite provider](../session-persistence-sqlite/README.md) saves logical events in a database and imports existing JSONL histories on first open. Both providers expose the same service and handle methods. A third-party backend may implement the service directly; the [backend contract](#understand-the-implementation) below is what it must honor.
 
 ### What the service provides
 
-With a backend mounted, six service methods address stored sessions:
+With a backend mounted, seven service methods address stored sessions:
 
 ```text
 const handle = await ctx.sessionPersistence.create(header)     // store a new session, take write ownership
@@ -46,6 +46,8 @@ await ctx.sessionPersistence.delete(id)                        // permanently re
 ```
 
 Service-level `flush()` drains every active write handle's routed events and materializes its session, exactly as each handle's own `flush` would; failures aggregate per session as an `AggregateError` without abandoning the sweep, and a handle closed mid-sweep counts as flushed because close itself drains durably.
+
+`create(header, { source, inheritedEventCount })` durably stores the complete fork history before returning the writer. `source.events` runs from seq 0: the parent's stored prefix through the exclusive `source.endSeq`, then the child's events; when `header.isSeeded` is true, they contain the inherited marker at `inheritedEventCount`. A backend that shares the prefix requires the parent to exist with at least `endSeq` persisted events and writes only the remainder; a copying backend writes all of them. Later parent appends do not change the child. See [`SessionPersistenceCreateOptions`](src/index.ts) for the source fields and creation failures.
 
 `delete(id)` is the one destructive service operation: it removes the session's durable artifact and resolves only once `stat` and `list` no longer observe the id. No tombstone, backup, or regeneration remains, and deletion neither archives nor accounts — a caller that also owns grouping records must forget the id itself. It refuses while any write handle owns the session, in this process or another, so a late append can never resurrect a log the caller asked to destroy; it reports `SessionPersistenceNotFoundError` for an id the backend does not hold. Backends that cannot remove an artifact inherit the default refusal, `SessionPersistenceDeleteUnsupportedError`, rather than silently reporting success.
 
